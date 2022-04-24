@@ -17,6 +17,9 @@ void UpdateGlobals()
     std::ifstream Stream;
     Stream.open("C:\\Users\\danit\\source\\repos\\EzGlobalUpdater\\x64\\Release\\am_gang_call.ysc.full", std::fstream::in | std::fstream::binary);
    
+    std::ofstream Output;
+    Output.open("C:\\Users\\danit\\source\\repos\\EzGlobalUpdater\\x64\\Release\\am_gang_call.assembly.txt", std::fstream::out | std::fstream::binary | std::fstream::trunc);
+
     Ez::EzSrcProgram Script;
     if (auto Result = Script.ParseHeader(Stream, "am_gang_call", false); Result != Ez::EzScriptStatus::NoError)
         std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
@@ -49,6 +52,11 @@ void UpdateGlobals()
         std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
 
     printf("Predecompiled functions, generated %zu instructions\n", Decompiler.GetDecompiledInstructions());
+
+    if (auto Result = Decompiler.Decompile(); Result != Ez::EzDecompilerStatus::NoError)
+        std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
+
+    Output << Decompiler.GetAssembly().str() << std::endl;
 
     /*if (!ScrFile.ParseHeader("freemode"))
     {

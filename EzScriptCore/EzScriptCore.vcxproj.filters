@@ -1,76 +1,35 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="EzBuffer">
-      <UniqueIdentifier>{fa0121be-47ea-4dc7-bde0-382e987b86ef}</UniqueIdentifier>
-    </Filter>
     <Filter Include="EzDecompiler">
-      <UniqueIdentifier>{f1ac8d6d-9edf-4dde-8b44-c95d73743f11}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="EzInstruction">
-      <UniqueIdentifier>{47557379-0f0d-4f54-a23b-851501d3f58e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="EzInstruction\Instructions">
-      <UniqueIdentifier>{b752179e-8758-4993-b622-3299771f9549}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="EzProgram">
-      <UniqueIdentifier>{0d986823-d08b-445e-95e3-14fe9dedbc51}</UniqueIdentifier>
+      <UniqueIdentifier>{288FAEE4-14F2-3D89-BD77-763FA9B9090C}</UniqueIdentifier>
     </Filter>
     <Filter Include="EzFunction">
-      <UniqueIdentifier>{cf55ca96-d066-405a-bd45-a30e606fd90f}</UniqueIdentifier>
+      <UniqueIdentifier>{CA290BA0-B6E1-4CED-1FE9-25490BC0E7DD}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EzHasher">
-      <UniqueIdentifier>{9a65e7e5-0cf2-40f0-a2c8-dec05772f92e}</UniqueIdentifier>
+    <Filter Include="EzInstruction">
+      <UniqueIdentifier>{062DE4AA-72ED-5FE1-3B28-A95EA7A7A4BD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EzInstruction\Instructions">
+      <UniqueIdentifier>{0A2AE3AC-F639-8F7D-5FF3-F39B4B227E16}</UniqueIdentifier>
     </Filter>
     <Filter Include="EzStack">
-      <UniqueIdentifier>{736915f3-8c9a-47e6-80cf-9eba22d34fbf}</UniqueIdentifier>
+      <UniqueIdentifier>{BA91E6E5-2671-6581-2F89-F0579BE7CBE2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp" />
-    <ClCompile Include="EzBuffer.cpp">
-      <Filter>EzBuffer</Filter>
-    </ClCompile>
-    <ClCompile Include="EzDecompiler\EzDecompiler.cpp">
-      <Filter>EzDecompiler</Filter>
-    </ClCompile>
-    <ClCompile Include="EzInstruction\EzInstruction.cpp">
-      <Filter>EzInstruction</Filter>
-    </ClCompile>
-    <ClCompile Include="EzSrcProgram.cpp">
-      <Filter>EzProgram</Filter>
-    </ClCompile>
-    <ClCompile Include="EzFunction\EzFunction.cpp">
-      <Filter>EzFunction</Filter>
-    </ClCompile>
-    <ClCompile Include="EzInstruction\Instructions\EzJmp.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClCompile>
-    <ClCompile Include="EzInstruction\Instructions\EzSwitch.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClCompile>
-    <ClCompile Include="EzStack\EzStack.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="EzBuffer.h">
-      <Filter>EzBuffer</Filter>
-    </ClInclude>
+    <ClInclude Include="EzBuffer.h" />
     <ClInclude Include="EzDecompiler\EzDecompiler.h">
       <Filter>EzDecompiler</Filter>
     </ClInclude>
     <ClInclude Include="EzDecompiler\EzVariables.h">
       <Filter>EzDecompiler</Filter>
     </ClInclude>
-    <ClInclude Include="InstructionEnums.h" />
-    <ClInclude Include="EzInstruction\EzInstruction.h">
-      <Filter>EzInstruction</Filter>
-    </ClInclude>
-    <ClInclude Include="EzSrcProgram.h">
-      <Filter>EzProgram</Filter>
-    </ClInclude>
     <ClInclude Include="EzFunction\EzFunction.h">
       <Filter>EzFunction</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\EzInstruction.h">
+      <Filter>EzInstruction</Filter>
     </ClInclude>
     <ClInclude Include="EzInstruction\Instructions\EzJmp.h">
       <Filter>EzInstruction\Instructions</Filter>
@@ -78,6 +37,34 @@
     <ClInclude Include="EzInstruction\Instructions\EzSwitch.h">
       <Filter>EzInstruction\Instructions</Filter>
     </ClInclude>
-    <ClInclude Include="EzStack\EzStack.h" />
+    <ClInclude Include="EzSrcProgram.h" />
+    <ClInclude Include="EzStack\EzStack.h">
+      <Filter>EzStack</Filter>
+    </ClInclude>
+    <ClInclude Include="InstructionEnums.h" />
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="EzBuffer.cpp" />
+    <ClCompile Include="EzDecompiler\EzDecompiler.cpp">
+      <Filter>EzDecompiler</Filter>
+    </ClCompile>
+    <ClCompile Include="EzFunction\EzFunction.cpp">
+      <Filter>EzFunction</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\EzInstruction.cpp">
+      <Filter>EzInstruction</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzJmp.cpp">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzSwitch.cpp">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzSrcProgram.cpp" />
+    <ClCompile Include="EzStack\EzStack.cpp">
+      <Filter>EzStack</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp" />
   </ItemGroup>
 </Project>

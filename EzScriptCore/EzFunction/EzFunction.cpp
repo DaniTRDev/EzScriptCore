@@ -159,6 +159,7 @@ namespace Ez
 
 		for (auto i = 0; i < m_Instructions.size(); i++)
 		{
+			m_DecompiledInstructions++;
 			auto& Instr = m_Instructions[i];
 
 			if (Instr->m_InstructionId == rage::NOP) /*skip nops*/
@@ -170,10 +171,15 @@ namespace Ez
 			if (Instr->m_OperandCount > 0)
 			{
 				HasOperands = true;
-				OperandVal = Instr->GetOperandsI32(Console);
+				OperandVal = Instr->GetOperandsI32(Console, m_OpCodes);
 			}
 
+			m_ASsd << magic_enum::enum_name(Instr->m_InstructionId) << "\t";
+
+			if (HasOperands)
+				m_ASsd << OperandVal;
 			
+			m_ASsd << "\n";
 		}
 
 		return EzDecompilerStatus::NoError;
@@ -262,8 +268,8 @@ namespace Ez
 		return EzDecompilerStatus::NoError;
 	}
 	
-	const std::string& EzFunction::GetAssembly()
+	std::ostringstream& EzFunction::GetAssembly()
 	{
-		return m_ASsd.str();
+		return m_Dissasembly;
 	}
 }

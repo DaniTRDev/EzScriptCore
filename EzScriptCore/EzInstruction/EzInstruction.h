@@ -10,15 +10,14 @@ namespace Ez
 
 		friend class EzFunction;
 
-		EzInstruction(rage::RageInstr Instr, std::uint8_t* OpCodes, std::uintptr_t StartAddr, std::uint32_t OperandCount);
+		EzInstruction(rage::RageInstr Instr, std::uintptr_t StartAddr, std::uint32_t OperandCount);
 		~EzInstruction();
 
-		std::int32_t GetOperandsI32(bool IsConsole);
+		std::int32_t GetOperandsI32(bool IsConsole, std::uint8_t* OpCodes);
 
 	protected:
 
 		rage::RageInstr m_InstructionId;
-		std::uint8_t* m_OpCodes;
 
 		std::uintptr_t m_StartAddr;
 		std::uintptr_t m_EndAddr;

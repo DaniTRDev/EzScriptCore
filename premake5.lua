@@ -39,6 +39,18 @@ workspace "EzScript"
     configurations { "Debug", "Release" }
     platforms { "x64" }
 
+    project "magic_enum"
+        location "vendor/%{prj.name}"
+        kind "none"
+        language "C++"
+
+        files {
+            "vendor/%{prj.name}/include/**.hpp",
+            "vendor/%{prj.name}/**.cpp"
+        }
+
+        DeclareCommon()
+
     project "EzScriptCore"
         location "%{prj.name}"
         kind "StaticLib"
@@ -49,6 +61,12 @@ workspace "EzScript"
             "%{prj.name}/**.cpp"
         }
 
+        includedirs {
+            "vendor/magic_enum"
+        }
+
+        flags { "MultiProcessorCompile" }
+
         DeclareCommon()
 
     project "EzGlobalUpdater"
@@ -58,7 +76,8 @@ workspace "EzScript"
 
         includedirs {
 			"EzScriptCore",
-            "EzGlobalUpdater"
+            "EzGlobalUpdater",
+            "vendor/magic_enum"
         }
 
         -- PrecompiledHeaderInclude = "pch.h"

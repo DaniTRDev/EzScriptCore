@@ -14,6 +14,7 @@ namespace Ez
 		m_ScriptParams.clear();
 		m_Strings.clear();
 		m_Functions.clear();
+		m_Assembly.clear();
 	}
 
 	const std::vector<rage::EzLocal>& EzDecompiler::GetLocals()
@@ -268,6 +269,23 @@ namespace Ez
 		return EzDecompilerStatus::NoError;
 	}
 
+	EzDecompilerStatus EzDecompiler::Decompile()
+	{
+		m_DecompiledInstructions = 0;
+
+		for (auto& Func : m_Functions)
+		{
+			if (auto Result = Func->Decompile(m_Script->m_IsConsole); Result != EzDecompilerStatus::NoError)
+				return Result;
+
+			m_Assembly << Func->GetAssembly().str();
+
+			m_DecompiledInstructions += Func->GetDecompiledInstrNum();
+		}
+
+		return EzDecompilerStatus::NoError;
+	}
+
 	EzDecompilerStatus EzDecompiler::MapLocals(std::int32_t StaticsOffset, std::int32_t StaticsCount,
 		std::int32_t ParameterCount)
 	{
@@ -389,5 +407,9 @@ namespace Ez
 			FuncPrologue, FuncEpilogue));
 
 		return EzDecompilerStatus::NoError;
+	}
+	std::ostringstream& EzDecompiler::GetAssembly()
+	{
+		return std::move(m_Assembly);
 	}
 }

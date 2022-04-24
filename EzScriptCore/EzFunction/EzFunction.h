@@ -62,14 +62,14 @@ namespace Ez
 
 		virtual std::size_t GetDecompiledInstrNum();
 
+		std::ostringstream& GetAssembly();
+
 	private:
 
 		EzDecompilerStatus GetJump(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uintptr_t FuncEnd, bool Console);
 		EzDecompilerStatus GetDup(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
 
 		EzDecompilerStatus GetSwitch(rage::RageInstr Instr, std::uintptr_t& OpCodeId, bool Console);
-
-		const std::string& GetAssembly();
 
 	private:
 
@@ -81,7 +81,7 @@ namespace Ez
 
 		std::size_t m_DecompiledInstructions;
 
-		std::ostringstream m_ASsd;
+		std::ostringstream m_Dissasembly;
 
 	private:
 

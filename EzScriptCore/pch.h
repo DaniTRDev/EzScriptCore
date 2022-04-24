@@ -11,6 +11,8 @@
 #include <filesystem>
 #include <string_view>
 
+#include <include/magic_enum.hpp>
+
 #ifdef EZEXPORT
 #define EZAPI __declspec(dllexport)
 #else 

@@ -85,6 +85,10 @@ namespace Ez
 		/// <returns>EzDecompilerStatus</returns>
 		EzDecompilerStatus PreDecompileFunctions();
 
+		EzDecompilerStatus Decompile();
+
+		std::ostringstream& GetAssembly();
+
 	private:
 
 		EzDecompilerStatus MapLocals(std::int32_t StaticsOffset, std::int32_t StaticsCount, std::int32_t ParameterCount);
@@ -106,6 +110,8 @@ namespace Ez
 		std::size_t m_DecompiledInstructions;
 
 		std::vector<EzFunction*> m_Functions;
+
+		std::ostringstream m_Assembly;
 
 	private: /*variables require by the decompiler*/
 
