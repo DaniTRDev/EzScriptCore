@@ -1,0 +1,37 @@
+	namespace rage
+	{
+#pragma pack(push, 1) /*disable automatic padding of VS to be "cache-friendly"*/
+		struct FuncPrologue
+		{
+			std::uint8_t	m_EnterOpCode;
+			std::uint8_t	m_ParemeterCount;
+			std::uint16_t	m_VariableCount; 
+			std::uint8_t	m_FuncNameLenght;
+		};
+		struct FuncEpilogue
+		{
+			std::uint8_t m_LeaveOpCode;
+			std::uint8_t m_ParameterCount;
+			std::uint8_t m_ReturnCount;
+		};
+
+		struct FuncSwitchCase
+		{
+			std::int32_t m_CaseVal;
+			std::int16_t m_JumpOffset;
+		};
+		struct FuncSwitch
+		{
+			std::uint8_t	m_OpSwitchOpCode;
+			std::uint8_t	m_NumCases;
+			FuncSwitchCase	m_Cases[1]; /*we need to do this trick to be able to have an array 
+									    of contiguous memory*/
+		};
+
+		struct Jump
+		{
+			std::uint8_t  m_JumpOpCode;
+			std::uint16_t m_JumpOffset;
+		};
+#pragma pack(pop)
+	};

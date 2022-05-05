@@ -6,13 +6,8 @@ namespace Ez
 	{
 	public:
 
-		EzJmp(rage::RageInstr Instr, std::uintptr_t StartAddr, std::int32_t JumpOffset);
+		EzJmp(rage::RageInstr Instr, std::uintptr_t StartAddr, rage::Jump* RageJump);
 
-		std::int32_t GetJumpOffset();
-
-	private:
-
-		std::int32_t m_JumpOffset;
 	};
 }
 

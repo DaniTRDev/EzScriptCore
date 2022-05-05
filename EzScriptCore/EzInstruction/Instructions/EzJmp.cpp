@@ -2,13 +2,12 @@
 
 namespace Ez
 {
-	EzJmp::EzJmp(rage::RageInstr Instr, std::uintptr_t StartAddr, std::int32_t JumpOffset) :
-		EzInstruction(Instr, StartAddr, std::uint32_t(sizeof(rage::Jump) - 1)), m_JumpOffset(JumpOffset)
+	EzJmp::EzJmp(rage::RageInstr Instr, std::uintptr_t StartAddr, rage::Jump* RageJump) :
+		EzInstruction(Instr, StartAddr, std::uint32_t(sizeof(rage::Jump) - 1))
 	{
+		m_IsJump = true;
+		m_JumpOffset = StartAddr + RageJump->m_JumpOffset + sizeof(rage::Jump);
+		/*relative to buffer*/
 	}
-	
-	std::int32_t EzJmp::GetJumpOffset()
-	{
-		return m_JumpOffset;
-	}
+
 }

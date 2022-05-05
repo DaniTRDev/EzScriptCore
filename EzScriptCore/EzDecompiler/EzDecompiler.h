@@ -24,7 +24,7 @@ namespace Ez
 	public:
 
 		/// <summary>
-		///		<param name=''>An EzSrcProgram that will contain the require information to decompile the script</param>
+		///		<param name='Script'>An EzSrcProgram that will contain the require information to decompile the script</param>
 		/// </summary> 
 		/// <returns>EzDecompilerStatus</returns>
 		EzDecompiler(EzSrcProgram* Script); /*will need to transfer the ownership of the m_Buffer to avoid accesing it when
@@ -35,28 +35,36 @@ namespace Ez
 		/// </summary> Returns mapped locals
 		/// <returns>std::vector<rage::EzLocal></returns>
 		const std::vector<rage::EzLocal>& GetLocals();
+
 		/// <summary>
-		/// </summary> Returns script parameters
+		/// </summary> Returns mapped script parameters
 		/// <returns>std::vector<rage::EzScriptParam></returns>
 		const std::vector<rage::EzScriptParam>& GetScriptParams();
+
 		/// <summary>
 		/// </summary> Returns mapped strings
 		/// <returns>std::vector<std::string></returns>
 		const std::vector<std::string>& GetStrings();
+
+		/// <summary>
+		/// </summary> Returns mapped natives and their indices
+		/// <returns>std::map<std::size_t, std::uint64_t></returns>
+		const std::map<std::size_t, std::uint64_t>& GetNatives();
+
 		/// <summary>
 		/// </summary> Returns the number of blocks
 		/// <returns>std::size_t</returns>
 		const std::size_t GetBlocksNumber();
+
 		/// <summary>
 		/// </summary> Returns a block size after mergin all the blocks in an only one
 		/// <returns>std::vector<rage::EzLocal></returns>
 		const std::size_t GetBlockSize();
 
-		const std::vector<EzFunction*>& GetFunctions();
 		/// <summary>
-		/// </summary> Returns the number of predecompiled or decompiled instructions
-		/// <returns>std::size_t</returns>
-		std::size_t GetDecompiledInstructions();
+		/// </summary> Returns mapped functions
+		/// <returns>std::vector<rage::EzFunction*></returns>
+		const std::vector<EzFunction*>& GetFunctions();
 
 	public: /*decompilation*/
 
@@ -71,6 +79,11 @@ namespace Ez
 		EzDecompilerStatus MapStrings();
 
 		/// <summary>
+		/// </summary>  Map natives and their linked index in this script
+		/// <returns>EzDecompilerStatus</returns>
+		EzDecompilerStatus MapNatives();
+
+		/// <summary>
 		/// </summary>  Map code blocks and merge them in a single block
 		/// <returns>EzDecompilerStatus</returns>
 		EzDecompilerStatus MapCodeBlocks();
@@ -81,21 +94,61 @@ namespace Ez
 		EzDecompilerStatus MapFunctions();
 
 		/// <summary>
-		/// </summary>Decompiles functions mapped in MapFunctions
+		/// <param name='Offset'>The offset where the function is located, or any of its instructions</param>
+		/// </summary> Retrieves the function from the given offset
+		/// <returns>EzFunction*</returns>
+		EzFunction* GetFuncFromOffset(std::uintptr_t Offset);
+
+		/// <summary>
+		/// </summary>Maps and parse the instructions inside every mapped function
 		/// <returns>EzDecompilerStatus</returns>
-		EzDecompilerStatus PreDecompileFunctions();
+		EzDecompilerStatus MapInstructionsFromFuncs();
 
-		EzDecompilerStatus Decompile();
+		/// <summary>
+		/// </summary> Returns the number of mapped instructions
+		/// <returns>std::size_t</returns>
+		std::size_t GetMappedInstructions();
 
+		/// <summary>
+		/// </summary> Disassembles every function inside m_Functions
+		/// <returns>EzDecompilerStatus</returns>
+		EzDecompilerStatus Disassemble();
+
+		/// <summary>
+		/// <param name='Func'>The function to be disassembled</param>
+		/// </summary> Disassembles the function passed as argument
+		/// <returns>EzDecompilerStatus</returns>
+		EzDecompilerStatus DisassembleFunc(EzFunction* Func);
+
+		/// <summary>
+		/// <param name='Func'>The function in where the instruction is located</param>
+		/// <param name='Instructions'>The array of instructions of this function </param>
+		/// <param name='InstrId'>A reference to the instruction id variable</param>
+		/// </summary> Disassembles the instruction passed on the array with the current Index
+		/// <returns>EzDecompilerStatus</returns>
+		EzDecompilerStatus DisassembleInstr(EzFunction * Func, std::unique_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId);
+
+		/// <summary>
+		/// </summary> Returns the number of disassembled instructions
+		/// <returns>std::size_t</returns>
+		std::size_t GetDisassembledInstructions();
+
+		/// <summary>
+		/// <param name='Address'>The address where the instruction is</param>
+		/// </summary> Returns the id(in the vector of instructions) of the given addr
+		/// <returns>std::size_t</returns>
+		std::size_t GetInstructionPosFromAddr(std::uintptr_t Address);
+
+		/// <summary>
+		/// </summary> Returns the disassembled code to text
+		/// <returns>std::ostringstream&</returns>
 		std::ostringstream& GetAssembly();
 
+		/// <summary>
+		/// </summary> Returns the last disassembled code to text
+		/// <returns>std::ostringstream&</returns>
+		std::ostringstream& GetLastAssembly();
 	private:
-
-		EzDecompilerStatus MapLocals(std::int32_t StaticsOffset, std::int32_t StaticsCount, std::int32_t ParameterCount);
-
-		EzDecompilerStatus MapStrings(std::int32_t StringsSize);
-
-		EzDecompilerStatus MapCodeBlocks(std::int32_t CodeLenght);
 
 		EzDecompilerStatus MapFunctionProto(std::uintptr_t FuncStartAddr, std::uintptr_t FuncEndAddr);
 
@@ -104,23 +157,23 @@ namespace Ez
 		std::vector<rage::EzLocal> m_Locals;
 		std::vector<rage::EzScriptParam> m_ScriptParams;
 		std::vector<std::string> m_Strings;
+		std::map<std::size_t, std::uint64_t> m_NativeMap;
 
-		std::unique_ptr<EzBuffer> m_CodeBlock;
-		std::vector<EzInstruction*> m_Instructions;
-		std::size_t m_DecompiledInstructions;
+		std::size_t m_MappedInstructions;
+		std::size_t m_DisassembledInstructions;
 
 		std::vector<EzFunction*> m_Functions;
 
 		std::ostringstream m_Assembly;
+		std::ostringstream m_LastAssembly; /*the disassembled code of the func from DisassembleFunc*/
 
 	private: /*variables require by the decompiler*/
 
 		std::unique_ptr<EzBuffer> m_ScriptBuffer;
+		std::unique_ptr<EzBuffer> m_CodeBuffer;
+		EzSrcProgram* m_Script;
 
 		std::uint8_t m_OpCodeId; /*used to get the last addr we scanned*/
-		EzFunction* m_LastFunc; /*used to get th last func we wanted to decompile*/
-
-		EzSrcProgram* m_Script;
 	};
 }
 

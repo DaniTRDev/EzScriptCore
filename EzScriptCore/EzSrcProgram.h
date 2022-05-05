@@ -2,8 +2,8 @@
 
 namespace Ez
 {
-	namespace Endians /*since we are in little endian and consoles (NOT PS4) are on big endian, we need to swap the values*/
-	{ /*thanks to https://codereview.stackexchange.com/questions/151049/endianness-conversion-in-c*/
+	//namespace Endians since we are in little endian and consoles (NOT PS4) are on big endian, we need to swap the values*/
+	/* { thanks to https ://codereview.stackexchange.com/questions/151049/endianness-conversion-in-c
 		inline std::uint16_t Reverse16(std::uint16_t value)
 		{
 			return (((value & 0x00FF) << 8) |
@@ -17,7 +17,7 @@ namespace Ez
 				((value & 0x00FF0000) >> 8) |
 				((value & 0xFF000000) >> 24));
 		}
-	}
+	}*/
 
 	namespace rage
 	{
@@ -33,22 +33,16 @@ namespace Ez
 			char m_Pad[4];
 		} PCOffsetEntry;
 
-		typedef struct
+		/*typedef struct
 		{
-			std::int32_t m_Offset; /*this will be in little endian, needs conversion*/
-		}ConsoleOffsetEntry;
+			std::int32_t m_Offset; //this will be in little endian, only for old gen consoles, needs conversion
+		}ConsoleOffsetEntry;*/
 
 		/// <summary>
 		///		<param name='Entry'>The offset entry that is going to be forced to be 24bits</param> 
-		/// </summary> It does: Entry.m_Offset = Entry.m_Offset & 0xFFFFFF;
-		extern void Ensure24Bits(PCOffsetEntry& Entry);
-
-		/// <summary>
-		///		<param name='Entry'>The offset entry that is going to be forced to be 24bits</param> 
-		/// It does: Entry.m_Offset = Reverse32(Entry.m_Offset) & 0xFFFFFF;
-		/// Since this is for old gen consoles it also swaps endians
+		/// It does: Entry.m_Offset = Entry.m_Offset & 0xFFFFFF;
 		/// </summary> 
-		extern void Ensure24Bits(ConsoleOffsetEntry& Entry);
+		extern void Ensure24Bits(PCOffsetEntry& Entry);
 
 		struct scrProgramHeaderPC
 		{
@@ -76,7 +70,7 @@ namespace Ez
 			std::int32_t			m_Null4;
 			char					m_Pad3[4];
 		};
-		struct scrProgramHeaderConsole /*THESE VALUES NEED TO BE TRANSFORMED FROM BIG ENDIA TO LITTLE ENDIAN USING rage::Reverse32*/
+		/*struct scrProgramHeaderConsole //needs endian conversion in old gen -> big to little
 		{
 			std::int32_t				m_Magic;
 			ConsoleOffsetEntry			m_SubHeader;
@@ -98,7 +92,7 @@ namespace Ez
 			ConsoleOffsetEntry			m_StringsOffset;
 			std::int32_t				m_StringsSize;
 			std::int32_t				m_Null4;
-		};
+		};*/
 	}
 
 	enum class EzScriptStatus
@@ -121,20 +115,16 @@ namespace Ez
 
 		/// <summary>
 		///		<param name='Stream'>The stream of the script file, should be derived from a std::ifstream</param> 
-		///		<param name='ExpectedSriptName'>The original script name, used to check if the parsing was good</param> 
-		///		<param name='IsConsole'>Tells our parser to parse as a console header</param>  
+		///		<param name='ExpectedSriptName'>The original script name, used to check if the parsing was good</param>  
 		/// </summary> 
 		/// <returns>EzScriptStatus</returns>
-		EzScriptStatus ParseHeader(std::istream& Stream, std::string ExpectedScriptName, bool IsConsole); 
+		EzScriptStatus ParseHeader(std::istream& Stream, std::string ExpectedScriptName); 
 		/// <summary>
 		/// </summary> Retrieves the offsets for block, strings and their array size
 		/// <returns>EzScriptStatus</returns>
 		EzScriptStatus GetOffsetsFromHeader(); /*retrieve the variables above from the script header*/
 
-		rage::scrProgramHeaderConsole*	m_ConsoleH;
-		rage::scrProgramHeaderPC*		m_PCH;
-
-		bool							m_IsConsole;
+		rage::scrProgramHeaderPC*		m_Header;
 
 		std::int32_t					m_RSC7Offset;
 		std::int32_t*					m_StringTableOffsets;

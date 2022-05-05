@@ -3,7 +3,7 @@
 namespace Ez
 {
 	EzDecompiler::EzDecompiler(EzSrcProgram* Script) : m_ScriptBuffer(std::move(Script->m_ScriptBuff)),
-		m_OpCodeId(0), m_Script(Script), m_DecompiledInstructions(0)
+		m_OpCodeId(0), m_Script(Script), m_MappedInstructions(0), m_DisassembledInstructions(0)
 	{
 	}
 	Ez::EzDecompiler::~EzDecompiler()
@@ -14,7 +14,10 @@ namespace Ez
 		m_ScriptParams.clear();
 		m_Strings.clear();
 		m_Functions.clear();
+		m_Assembly.str("");
 		m_Assembly.clear();
+		m_LastAssembly.str("");
+		m_LastAssembly.clear(); /*reset m_LastAssembly*/
 	}
 
 	const std::vector<rage::EzLocal>& EzDecompiler::GetLocals()
@@ -30,13 +33,18 @@ namespace Ez
 		return m_Strings;
 	}
 
+	const std::map<std::size_t, std::uint64_t>& EzDecompiler::GetNatives()
+	{
+		return m_NativeMap;
+	}
+
 	const std::size_t EzDecompiler::GetBlocksNumber()
 	{
 		return m_Script->m_CodeBlocks;
 	}
 	const std::size_t EzDecompiler::GetBlockSize()
 	{
-		return m_CodeBlock->GetBufferSize();
+		return m_CodeBuffer->GetBufferSize();
 	}
 
 	const std::vector<EzFunction*>& EzDecompiler::GetFunctions()
@@ -44,99 +52,150 @@ namespace Ez
 		return m_Functions;
 	}
 
-	std::size_t EzDecompiler::GetDecompiledInstructions()
-	{
-		return m_DecompiledInstructions;
-	}
-
 	EzDecompilerStatus EzDecompiler::MapLocals()
 	{
-		if (!m_Script->m_ConsoleH && !m_Script->m_PCH)
+		if (!m_Script->m_Header)
 			return EzDecompilerStatus::InvalidScriptHeader;
 
-		if (m_Script->m_IsConsole)
-			return MapLocals(m_Script->m_ConsoleH->m_StaticsOffset.m_Offset,
-				m_Script->m_ConsoleH->m_StaticsCount, m_Script->m_ConsoleH->m_ParameterCount);
+		auto StaticsCount = m_Script->m_Header->m_StaticsCount;
+		auto ParameterCount = m_Script->m_Header->m_ParameterCount;
 
-		return MapLocals(m_Script->m_PCH->m_StaticsOffset.m_Offset,
-			m_Script->m_PCH->m_StaticsCount, m_Script->m_PCH->m_ParameterCount);
+		m_ScriptBuffer->SetPos(m_Script->m_Header->m_StaticsOffset.m_Offset + m_Script->m_RSC7Offset);
+
+		for (auto i = 0; i < StaticsCount - ParameterCount; i++)
+		{
+			std::int64_t Value = 0;
+			m_ScriptBuffer->Read((char*)&Value, sizeof(Value));
+
+			m_Locals.push_back(rage::EzLocal{ std::uint32_t(m_Locals.size()), Value });
+		}
+
+		for (auto i = StaticsCount - ParameterCount; i < StaticsCount; i++)
+		{
+			std::int64_t Value = 0;
+			m_ScriptBuffer->Read((char*)&Value, sizeof(Value));
+
+			m_ScriptParams.push_back(rage::EzScriptParam{ std::uint32_t(m_Locals.size()), Value });
+		}
+
+		return EzDecompilerStatus::NoError;
 	}
 	EzDecompilerStatus EzDecompiler::MapStrings()
 	{
-		if (!m_Script->m_ConsoleH && !m_Script->m_PCH)
+		if (!m_Script->m_Header)
 			return EzDecompilerStatus::InvalidScriptHeader;
 
-		else if (m_Script->m_IsConsole)
-			return MapStrings(m_Script->m_ConsoleH->m_StringsSize);
+		/*first map string tables and merge them in a single table*/
+		auto StringsSize = m_Script->m_Header->m_StringsSize;
+		EzBuffer StringTable;
+		StringTable.AllocateBuffer(StringsSize);
 
-		return MapStrings(m_Script->m_PCH->m_StringsSize);
+		for (auto i = 0; i < m_Script->m_StringBlocks; i++)
+		{
+			auto TableSize = ((i + 1) * 0x4000 >= StringsSize) ? StringsSize % 0x4000 : 0x4000;
+			auto Table = std::make_unique<std::uint8_t[]>(TableSize);
+
+			m_ScriptBuffer->SetPos(m_Script->m_StringTableOffsets[i]);
+			m_ScriptBuffer->Read(Table, TableSize);
+
+			StringTable.Write(std::move(Table), TableSize);
+		}
+
+		auto Data = StringTable.GetData();
+		auto DataSize = StringTable.GetBufferSize();
+
+		std::string String;
+
+		for (auto i = 0; i < DataSize; i++)
+		{
+			auto Byte = Data[i];
+
+			switch (Byte)
+			{
+			case rage::SI_StringAddNewLine:
+				String.push_back('\n');
+				break;
+
+			case rage::SI_StringAddCarriageReturn:
+				String.push_back('\r');
+				break;
+
+			case rage::SI_StringAddDoubleQuote:
+				String.push_back('"');
+				break;
+
+			case rage::SI_StringFinish:
+				m_Strings.push_back(String);
+				String.clear();
+				break;
+
+			default:
+				String.push_back((char)Byte);
+				break;
+
+			}
+		}
+
+		return EzDecompilerStatus::NoError;
+	}
+	EzDecompilerStatus EzDecompiler::MapNatives()
+	{
+		m_ScriptBuffer->SetPos(m_Script->m_Header->m_NativesOffset.m_Offset + m_Script->m_RSC7Offset);
+		auto CodeSize = m_Script->m_Header->m_CodeLength;
+
+		for (auto i = 0; i < m_Script->m_Header->m_NativesCount; i++)
+		{
+			auto EncryptedNatVal = std::int64_t(0);
+			auto Key = CodeSize + i;
+
+			m_ScriptBuffer->Read((char*)&EncryptedNatVal, sizeof(EncryptedNatVal));
+			auto Decrypted = std::rotl<std::uint64_t>(EncryptedNatVal, Key); 
+
+			m_NativeMap.insert({ i, Decrypted });
+		}
+
+		return EzDecompilerStatus::NoError;
 	}
 	EzDecompilerStatus EzDecompiler::MapCodeBlocks()
 	{
-		if (!m_Script->m_ConsoleH && !m_Script->m_PCH)
+		if (!m_Script->m_Header)
 			return EzDecompilerStatus::InvalidScriptHeader;
 
-		else if (m_Script->m_IsConsole)
-			return MapCodeBlocks(m_Script->m_ConsoleH->m_CodeLength);
+		auto CodeLenght = m_Script->m_Header->m_CodeLength;
 
-		return MapCodeBlocks(m_Script->m_PCH->m_CodeLength);
+		m_CodeBuffer = std::make_unique<EzBuffer>();
+		m_CodeBuffer->AllocateBuffer(CodeLenght);
+
+		for (auto i = 0; i < m_Script->m_CodeBlocks; i++)
+		{
+			auto TableSize = (std::int32_t((i + 1) * 0x4000) >= CodeLenght) ? CodeLenght % 0x4000 : 0x4000;
+			auto Block = std::make_unique<std::uint8_t[]>(TableSize);
+
+			m_ScriptBuffer->SetPos(m_Script->m_CodeTableOffsets[i]);
+			m_ScriptBuffer->Read(Block, TableSize);
+			m_CodeBuffer->Write(std::move(Block), TableSize);
+		}
+
+		return EzDecompilerStatus::NoError;
 	}
 
 	EzDecompilerStatus EzDecompiler::MapFunctions()
 	{
-		if (!m_CodeBlock)
+		if (!m_CodeBuffer)
 			return EzDecompilerStatus::CodeBlocksNotMapped;
 
-		auto OpCodes = m_CodeBlock->GetData();
-		std::uintptr_t FuncStart = 0;
+		auto OpCodes = m_CodeBuffer->GetData();
 
-		/*I know there are opcodes that are useless in the switch because we break on them
-			but I just want to keep them there in case something changes in the future; 
-		  Also, everytime I need to walk the opcodes I'll just copy this switch and modify how to handle cases*/
-		for (auto OpCodeId = 0; OpCodeId < m_CodeBlock->GetBufferSize(); OpCodeId++)
+		bool OnFunc = false;
+		std::uintptr_t FuncStart = UINTPTR_MAX;
+		std::uintptr_t FuncEnd = 0;
+
+		for (auto OpCodeId = 0; OpCodeId < m_CodeBuffer->GetBufferSize(); OpCodeId++)
 		{
 			auto OpCode = OpCodes[OpCodeId];
 			switch (OpCode)
-			{/*we need to think in OpCodeId++, so we only want to add the func size, the next iteration will
+			{/*we need to think in OpCodeId++, so we only want to add instr operands, the next iteration will
 				have the next op code*/
-			case rage::NOP: /*instr size == 1 so it will be skipped in the next iteration of this for*/
-			case rage::IADD:
-			case rage::ISUB:
-			case rage::IMUL:
-			case rage::IDIV:
-			case rage::IMOD:
-			case rage::INOT:
-			case rage::INEG:
-			case rage::IEQ:
-			case rage::INE:
-			case rage::IGT:
-			case rage::IGE:
-			case rage::ILT:
-			case rage::ILE:
-			case rage::FADD:
-			case rage::FSUB:
-			case rage::FMUL:
-			case rage::FDIV:
-			case rage::FMOD:
-			case rage::FNEG:
-			case rage::FEQ:
-			case rage::FNE:
-			case rage::FGT:
-			case rage::FGE:
-			case rage::FLT:
-			case rage::FLE:
-			case rage::VADD:
-			case rage::VSUB:
-			case rage::VMUL:
-			case rage::VDIV:
-			case rage::VNEG:
-			case rage::IAND:
-			case rage::IOR:
-			case rage::IXOR:
-			case rage::I2F:
-			case rage::F2I:
-			case rage::F2V:
-				break;
 
 			case rage::PUSH_CONST_U8:
 				OpCodeId++;
@@ -155,29 +214,27 @@ namespace Ez
 				OpCodeId += 4;
 				break;
 
-			case rage::DUP:
-			case rage::DROP: /*instr size == 1*/
-				break;
-
 			case rage::NATIVE:
 				OpCodeId += 3;
 				break;
 
 			case rage::ENTER:
+
+				if (FuncStart != UINTPTR_MAX)
+				{
+					if (auto Result = MapFunctionProto(FuncStart, FuncEnd + 3);
+						Result != EzDecompilerStatus::NoError)
+						return Result;
+				}
+
 				FuncStart = OpCodeId;
+
 				OpCodeId += (OpCodes[OpCodeId + 4] + sizeof(rage::FuncPrologue) - 1); /*exclude the size of enter opcode*/
 				break;
 
-			case rage::LEAVE:
-				MapFunctionProto(FuncStart, OpCodeId + sizeof(rage::FuncEpilogue));
+			case rage::LEAVE: /*since leaves are used to return we need to disguish functions by enter opcodes*/
+				FuncEnd = OpCodeId;
 				OpCodeId += sizeof(rage::FuncEpilogue) - 1; /*exclude the size of leave opcode*/
-				break;
-
-			case rage::LOAD:
-			case rage::STORE:
-			case rage::STORE_REV:
-			case rage::LOAD_N:
-			case rage::STORE_N:
 				break;
 
 			case rage::ARRAY_U8:
@@ -238,164 +295,241 @@ namespace Ez
 				OpCodeId += (1 + OpCodes[OpCodeId + 1] * sizeof(rage::FuncSwitchCase));
 				break;
 
-			case rage::STRING:
-			case rage::STRINGHASH: /*instr size == 1*/
-				break;
-
 			case rage::TEXT_LABEL_ASSIGN_STRING:
 			case rage::TEXT_LABEL_ASSIGN_INT:
 			case rage::TEXT_LABEL_APPEND_STRING:
 			case rage::TEXT_LABEL_APPEND_INT:
 				OpCodeId++;
 				break;
-			}
-		}
 
-		return EzDecompilerStatus::NoError;
-	}
-
-	EzDecompilerStatus EzDecompiler::PreDecompileFunctions()
-	{
-		m_DecompiledInstructions = 0;
-
-		for (auto& Func : m_Functions)
-		{
-			if (auto Result = Func->PreDecompile(m_Script->m_IsConsole); Result != EzDecompilerStatus::NoError)
-				return Result;
-
-			m_DecompiledInstructions += Func->GetDecompiledInstrNum();
-		}
-
-		return EzDecompilerStatus::NoError;
-	}
-
-	EzDecompilerStatus EzDecompiler::Decompile()
-	{
-		m_DecompiledInstructions = 0;
-
-		for (auto& Func : m_Functions)
-		{
-			if (auto Result = Func->Decompile(m_Script->m_IsConsole); Result != EzDecompilerStatus::NoError)
-				return Result;
-
-			m_Assembly << Func->GetAssembly().str();
-
-			m_DecompiledInstructions += Func->GetDecompiledInstrNum();
-		}
-
-		return EzDecompilerStatus::NoError;
-	}
-
-	EzDecompilerStatus EzDecompiler::MapLocals(std::int32_t StaticsOffset, std::int32_t StaticsCount,
-		std::int32_t ParameterCount)
-	{
-		m_ScriptBuffer->SetPos(StaticsOffset + m_Script->m_RSC7Offset);
-
-		for (auto i = 0; i < StaticsCount - ParameterCount; i++)
-		{
-			std::int64_t Value = 0;
-			m_ScriptBuffer->Read((char*)&Value, sizeof(Value));
-
-			if (m_Script->m_IsConsole)
-				Value = Endians::Reverse32(std::uint32_t(Value));
-
-			m_Locals.push_back(rage::EzLocal{ std::uint32_t(m_Locals.size()), Value });
-		}
-
-		for (auto i = StaticsCount - ParameterCount; i < StaticsCount; i++)
-		{
-			std::int64_t Value = 0;
-			m_ScriptBuffer->Read((char*)&Value, sizeof(Value));
-
-			if (m_Script->m_IsConsole)
-				Value = Endians::Reverse32(std::uint32_t(Value));
-
-			m_ScriptParams.push_back(rage::EzScriptParam{ std::uint32_t(m_Locals.size()), Value });
-		}
-
-		return EzDecompilerStatus::NoError;
-	}
-
-	EzDecompilerStatus EzDecompiler::MapStrings(std::int32_t StringsSize)
-	{
-		/*first map string tables and merge them in a single table*/
-		EzBuffer StringTable;
-		StringTable.AllocateBuffer(StringsSize);
-
-		for (auto i = 0; i < m_Script->m_StringBlocks; i++)
-		{
-			auto TableSize = ((i + 1) * 0x4000 >= StringsSize) ? StringsSize % 0x4000 : 0x4000;
-			auto Table = std::make_unique<std::uint8_t[]>(TableSize);
-
-			m_ScriptBuffer->SetPos(m_Script->m_StringTableOffsets[i]);
-			m_ScriptBuffer->Read(Table, TableSize);
-
-			StringTable.Write(std::move(Table), TableSize);
-		}
-
-		auto Data = StringTable.GetData();
-		auto DataSize = StringTable.GetBufferSize();
-
-		std::string String;
-
-		for (auto i = 0; i < DataSize; i++)
-		{
-			auto Byte = Data[i];
-
-			switch (Byte)
-			{
-			case rage::SI_StringAddNewLine:
-				String.push_back('\n');
-				break;
-
-			case rage::SI_StringAddCarriageReturn:
-				String.push_back('\r');
-				break;
-
-			case rage::SI_StringAddDoubleQuote:
-				String.push_back('"');
-				break;
-
-			case rage::SI_StringFinish:
-				m_Strings.push_back(String);
-				String.clear();
-				break;
 
 			default:
-				String.push_back((char)Byte);
+				if (static_cast<int>(OpCode) > 126)
+					return EzDecompilerStatus::UnexpectedOpCode;
 				break;
-
 			}
 		}
 
+		MapFunctionProto(FuncStart, m_CodeBuffer->GetBufferSize()); 
+		/*we need to add specifically the last function because there won't be enter opcodes
+		at the end of the script*/
+
+
 		return EzDecompilerStatus::NoError;
 	}
 
-	EzDecompilerStatus EzDecompiler::MapCodeBlocks(std::int32_t CodeLenght)
+	EzFunction* EzDecompiler::GetFuncFromOffset(std::uintptr_t Offset)
 	{
-		m_CodeBlock = std::make_unique<EzBuffer>();
-		m_CodeBlock->AllocateBuffer(CodeLenght);
-
-		for (auto i = 0; i < m_Script->m_CodeBlocks; i++)
+		for (auto& Func : m_Functions)
 		{
-			auto TableSize = (std::int32_t((i + 1) * 0x4000) >= CodeLenght) ? CodeLenght % 0x4000 : 0x4000;
-			auto Block = std::make_unique<std::uint8_t[]>(TableSize);
+			if (Func->GetFuncStartAddr() >= Offset && Offset <= Func->GetFuncEndAddr())
+				return Func;
+		}
+		return nullptr; /*not a valid func*/
+	}
 
-			m_ScriptBuffer->SetPos(m_Script->m_CodeTableOffsets[i]);
-			m_ScriptBuffer->Read(Block, TableSize);
-			m_CodeBlock->Write(std::move(Block), TableSize);
+	EzDecompilerStatus EzDecompiler::MapInstructionsFromFuncs()
+	{
+		m_MappedInstructions = 0;
+		for (auto& Func : m_Functions)
+		{
+			if (auto Result = Func->MapInstructions(); Result != EzDecompilerStatus::NoError)
+				return Result;
+
+			m_MappedInstructions += Func->GetMappedInstructions();
 		}
 
 		return EzDecompilerStatus::NoError;
 	}
+	std::size_t EzDecompiler::GetMappedInstructions()
+	{
+		return m_MappedInstructions;
+	}
+
+	EzDecompilerStatus EzDecompiler::Disassemble()
+	{
+		m_DisassembledInstructions = 0;
+		for (auto& Func : m_Functions)
+		{
+			if (auto Result = DisassembleFunc(Func); Result != EzDecompilerStatus::NoError)
+				return Result;
+
+			m_Assembly << m_LastAssembly.str();
+		}
+
+		return EzDecompilerStatus::NoError;
+	}
+	EzDecompilerStatus EzDecompiler::DisassembleFunc(EzFunction* Func)
+	{
+		m_LastAssembly.str("");
+		m_LastAssembly.clear(); /*reset m_LastAssembly*/
+
+		auto& FuncInstrs = const_cast<std::vector<std::unique_ptr<EzInstruction>>&>
+			(Func->GetInstructions());
+		m_LastAssembly << "FSTART " << Func->GetFuncIndex() << "\n";
+
+		for (std::uintptr_t i = 0; i < FuncInstrs.size(); i++)
+		{
+			//if (FuncInstrs[i]->GetInstructionId() == rage::RageInstr::NOP)
+				//continue;
+
+			if (Func->IsAddressALoc(FuncInstrs[i]->GetStartAddr()))
+				m_LastAssembly << "loc_" << Func->GetLocIdByOffset(FuncInstrs[i]->GetStartAddr()) 
+				               << ":\n";
+			
+			else if (Func->IsAddressASwitchLoc(FuncInstrs[i]->GetStartAddr()))
+				m_LastAssembly << "switch_loc_" << Func->GetSwitchLocIdByOffset(FuncInstrs[i]->GetStartAddr()) 
+				               << ":\n";
+
+			if (auto Result = DisassembleInstr(Func, FuncInstrs.data(), i);
+					Result != EzDecompilerStatus::NoError)
+				return Result;
+
+			m_LastAssembly << "\n";
+			m_DisassembledInstructions = i;
+		}
+
+		m_LastAssembly << "FEND\n";
+
+		return EzDecompilerStatus::NoError;
+	}
+	EzDecompilerStatus EzDecompiler::DisassembleInstr(EzFunction* Func, 
+		std::unique_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId)
+	{
+		auto& Instruction = Instructions[InstrId];
+		auto OpCodes = m_CodeBuffer->GetData();
+		static auto IsSwitch = false; /*used to know if we are handling any instruction inside
+									  a switch, needed for JMPs right after them*/
+		
+		m_LastAssembly << "\t" << Instruction->Id2String(); /*print instruction opcode*/
+
+		if (Instruction->IsCall())
+		{
+			auto Func = GetFuncFromOffset(Instruction->GetCallOffset());
+			m_LastAssembly << "  func_" << Func->GetFuncIndex()
+						   << "  //Func parameter count: "
+						   << std::uint32_t(Func->GetPrologue()->m_ParemeterCount);
+		}
+		else if (Instruction->IsJump())
+		{
+			if (!IsSwitch)
+				m_LastAssembly << "  loc_" << Func->GetLocIdByOffset(Instruction->GetJumpOffset());
+
+			else
+			{
+				m_LastAssembly << "  switch_loc_" 
+						       << Func->GetSwitchLocIdByOffset(Instruction->GetJumpOffset());
+				IsSwitch = false;
+			}
+		}
+		else if (Instruction->IsNativeCall())
+		{
+			m_LastAssembly << "  0x" << std::hex << m_NativeMap[Instruction->GetNativeIndex()]
+						   << std::dec << "  //Native param count: "
+						   << std::uint32_t(Instruction->GetNativeParamCount())
+						   << ";Native return count: "
+						   << std::uint32_t(Instruction->GetNativeReturnCount());
+		}
+		else if (Instruction->IsSwitch())
+		{
+			m_LastAssembly << "\n";
+
+			InstrId++;
+			while (Instructions[InstrId]->GetInstructionId() == rage::RageInstr::NOP)
+				InstrId++;/*skip completely the switch & any posible nops after the it*/
+
+			auto Cases = Instruction->GetSwitchCases();
+			auto DefaultCaseJumpOff = Instructions[InstrId]->GetJumpOffset();
+			auto DefaultCaseCodePos = GetInstructionPosFromAddr(DefaultCaseJumpOff) - 1;
+			auto BreakJumpOff = UINTPTR_MAX;
+			auto LastCaseCodePos = UINTPTR_MAX;
+
+			auto IsBreakSameAsDefault = false;
+
+			for (auto& Case : Cases)
+			{
+				m_LastAssembly << "\t\t case " << Case.first << "  JMP switch_loc_"
+					<< Func->GetSwitchLocIdByOffset(Case.second);
+
+				auto& LastCaseInstr = Instructions[LastCaseCodePos - 1];
+
+				if (LastCaseCodePos != UINTPTR_MAX &&
+					LastCaseInstr->GetInstructionId() == rage::RageInstr::J)
+				{ /*if last instruction of the case is a JMP, the place where it jumps is the BREAK
+					of the switch*/
+					if (LastCaseInstr->GetJumpOffset() == DefaultCaseJumpOff)
+						IsBreakSameAsDefault = true;
+					/*break loc & default loc are the same, so default does not have a valid code path*/
+					else
+						BreakJumpOff = LastCaseInstr->GetJumpOffset();
+					/*if default is used in this switch, then BREAK has it's own loc*/
+				}
+
+				LastCaseCodePos = GetInstructionPosFromAddr(Case.second);
+				m_LastAssembly << "\n";
+			}
+
+			Func->AddSwitchLoc(BreakJumpOff);
+			if (!IsBreakSameAsDefault)
+			{
+				m_LastAssembly << "\t\t default: JMP switch_loc_"
+					<< Func->GetSwitchLocIdByOffset(DefaultCaseJumpOff);
+
+				m_LastAssembly << "\t\t //break switch_loc: JMP switch_loc_"
+					<< Func->GetSwitchLocIdByOffset(BreakJumpOff);
+			}
+			else
+			{
+				m_LastAssembly << "\t\t //default = break = switch_loc_"
+					<< Func->GetLocIdByOffset(DefaultCaseJumpOff);
+			}
+			
+			m_LastAssembly << "\n";
+			IsSwitch = true;
+
+			return DisassembleInstr(Func, Instructions, InstrId); 
+			/*print dissasembly of the JMP to the default case*/
+		}
+		else if (Instruction->GetOperandCount() > 0)
+		{
+			if (Instruction->IsFloat())
+				m_LastAssembly << "  " << Instruction->GetOperandsF(OpCodes);
+
+			else if (Instruction->IsSigned())
+			
+				m_LastAssembly << "  " << Instruction->GetOperandsI32(OpCodes);
+			
+			else
+				m_LastAssembly << "  " << Instruction->GetOperandsU32(OpCodes);
+			
+		}
+
+		return EzDecompilerStatus::NoError;
+	}
+	std::size_t EzDecompiler::GetDisassembledInstructions()
+	{
+		return m_DisassembledInstructions;
+	}
+
+	std::size_t EzDecompiler::GetInstructionPosFromAddr(std::uintptr_t Address)
+	{
+		for (auto Func : m_Functions)
+		{
+			for (auto i = 0; i < Func->GetInstructions().size(); i++)
+			{
+				if (Func->GetInstructions()[i]->GetStartAddr() == Address)
+					return i;
+			}
+		}
+
+		return SIZE_MAX;
+	}
+
 	EzDecompilerStatus EzDecompiler::MapFunctionProto(std::uintptr_t FuncStartAddr, std::uintptr_t FuncEndAddr)
 	{
-		auto BlockData = m_CodeBlock->GetData();
+		auto BlockData = m_CodeBuffer->GetData();
 		auto FuncPrologue = (rage::FuncPrologue*)&BlockData[FuncStartAddr];
 		auto FuncEpilogue = (rage::FuncEpilogue*)&BlockData[FuncEndAddr - sizeof(rage::FuncEpilogue)];
-
-		if (m_Script->m_IsConsole)
-			FuncPrologue->m_VariableCount = Endians::Reverse16(FuncPrologue->m_VariableCount);
 
 		if (FuncPrologue->m_EnterOpCode != rage::RageInstr::ENTER)
 			return EzDecompilerStatus::UnexpectedOpCode;
@@ -403,13 +537,18 @@ namespace Ez
 		else if (FuncEpilogue->m_LeaveOpCode != rage::RageInstr::LEAVE)
 			return EzDecompilerStatus::UnexpectedOpCode;
 
-		m_Functions.push_back(new EzFunction(m_CodeBlock->GetData(), FuncStartAddr, FuncEndAddr,
-			FuncPrologue, FuncEpilogue));
+		m_Functions.push_back(new EzFunction(m_CodeBuffer->GetData(), FuncStartAddr, FuncEndAddr,
+			m_Functions.size(), FuncPrologue, FuncEpilogue));
 
 		return EzDecompilerStatus::NoError;
 	}
+
 	std::ostringstream& EzDecompiler::GetAssembly()
 	{
-		return std::move(m_Assembly);
+		return m_Assembly;
+	}
+	std::ostringstream& EzDecompiler::GetLastAssembly()
+	{
+		return m_LastAssembly;
 	}
 }

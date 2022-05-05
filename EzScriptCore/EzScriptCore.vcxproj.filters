@@ -13,8 +13,8 @@
     <Filter Include="EzInstruction\Instructions">
       <UniqueIdentifier>{0A2AE3AC-F639-8F7D-5FF3-F39B4B227E16}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EzStack">
-      <UniqueIdentifier>{BA91E6E5-2671-6581-2F89-F0579BE7CBE2}</UniqueIdentifier>
+    <Filter Include="EzSignature">
+      <UniqueIdentifier>{d6863637-8405-4dbf-8552-3feaf67af1b7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -38,11 +38,23 @@
       <Filter>EzInstruction\Instructions</Filter>
     </ClInclude>
     <ClInclude Include="EzSrcProgram.h" />
-    <ClInclude Include="EzStack\EzStack.h">
-      <Filter>EzStack</Filter>
-    </ClInclude>
-    <ClInclude Include="InstructionEnums.h" />
+    <ClInclude Include="RageEnums.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="EzInstruction\Instructions\EzNativeCall.h">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzVarInstr.h">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzCall.h">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzFloatPush.h">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzSignature\EzSignature.h">
+      <Filter>EzSignature</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EzBuffer.cpp" />
@@ -62,9 +74,21 @@
       <Filter>EzInstruction\Instructions</Filter>
     </ClCompile>
     <ClCompile Include="EzSrcProgram.cpp" />
-    <ClCompile Include="EzStack\EzStack.cpp">
-      <Filter>EzStack</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="EzInstruction\Instructions\EzNativeCall.cpp">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzVarInstr.cpp">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzCall.cpp">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzFloatPush.cpp">
+      <Filter>EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzSignature\EzSignature.cpp">
+      <Filter>EzSignature</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

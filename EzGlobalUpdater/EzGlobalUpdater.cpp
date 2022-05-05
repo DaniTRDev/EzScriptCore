@@ -21,7 +21,7 @@ void UpdateGlobals()
     Output.open("C:\\Users\\danit\\source\\repos\\EzGlobalUpdater\\x64\\Release\\am_gang_call.assembly.txt", std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
     Ez::EzSrcProgram Script;
-    if (auto Result = Script.ParseHeader(Stream, "am_gang_call", false); Result != Ez::EzScriptStatus::NoError)
+    if (auto Result = Script.ParseHeader(Stream, "am_gang_call"); Result != Ez::EzScriptStatus::NoError)
         std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
 
     Ez::EzDecompiler Decompiler(&Script);
@@ -37,6 +37,11 @@ void UpdateGlobals()
 
     printf("Mapped %zu strings\n", Decompiler.GetStrings().size());
 
+    if (auto Result = Decompiler.MapNatives(); Result != Ez::EzDecompilerStatus::NoError)
+        std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
+
+    printf("Mapped %zu natives\n", Decompiler.GetNatives().size());
+
     if (auto Result = Decompiler.MapCodeBlocks(); Result != Ez::EzDecompilerStatus::NoError)
         std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
 
@@ -48,12 +53,12 @@ void UpdateGlobals()
 
     printf("Mapped %zu functions\n", Decompiler.GetFunctions().size());
 
-    if (auto Result = Decompiler.PreDecompileFunctions(); Result != Ez::EzDecompilerStatus::NoError)
+    if (auto Result = Decompiler.MapInstructionsFromFuncs(); Result != Ez::EzDecompilerStatus::NoError)
         std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
 
-    printf("Predecompiled functions, generated %zu instructions\n", Decompiler.GetDecompiledInstructions());
+    printf("Predecompiled functions, generated %zu instructions\n", Decompiler.GetMappedInstructions());
 
-    if (auto Result = Decompiler.Decompile(); Result != Ez::EzDecompilerStatus::NoError)
+    if (auto Result = Decompiler.Disassemble(); Result != Ez::EzDecompilerStatus::NoError)
         std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
 
     Output << Decompiler.GetAssembly().str() << std::endl;
