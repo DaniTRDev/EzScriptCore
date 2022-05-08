@@ -2,6 +2,8 @@
 #ifndef PCH_H
 #define PCH_H
 
+
+#include <Windows.h>
 #include <functional>
 #include <vector>
 #include <iostream>
@@ -10,6 +12,9 @@
 #include <map>
 #include <stack>
 #include <filesystem>
+#include <tchar.h>
+#include <stdio.h>
+#include <strsafe.h>
 #include <string_view>
 
 #ifdef EZEXPORT
@@ -65,6 +70,7 @@ namespace Util
 		auto Bytes = (std::int8_t*)&Value;
 		return Bits2I32(Bytes[3], Bytes[2], Bytes[1], Bytes[0]);
 	}
+
 }
 
 #include "RageEnums.h"
