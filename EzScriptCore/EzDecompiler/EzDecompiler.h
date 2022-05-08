@@ -58,15 +58,30 @@ namespace Ez
 
 		/// <summary>
 		/// </summary> Returns a block size after mergin all the blocks in an only one
+		/// <returns>std::size_t</returns>
+		const std::size_t GetCodeSize();
+
+		/// <summary>
+		/// </summary> Returns a block size after mergin all the blocks in an only one
 		/// <returns>std::vector<rage::EzLocal></returns>
-		const std::size_t GetBlockSize();
+		std::uint8_t* GetCode();
 
 		/// <summary>
 		/// </summary> Returns mapped functions
 		/// <returns>std::vector<rage::EzFunction*></returns>
 		const std::vector<EzFunction*>& GetFunctions();
 
+		/// <summary>
+		/// </summary> Returns the name of the script
+		/// <returns>std::string</returns>
+		std::string GetScriptName();
+
 	public: /*decompilation*/
+
+		/// <summary>
+		/// </summary>  Map everything from the script
+		/// <returns>EzDecompilerStatus</returns>
+		EzDecompilerStatus MapScript();
 
 		/// <summary>
 		/// </summary>  Map locals indexes of the script
@@ -126,7 +141,7 @@ namespace Ez
 		/// <param name='InstrId'>A reference to the instruction id variable</param>
 		/// </summary> Disassembles the instruction passed on the array with the current Index
 		/// <returns>EzDecompilerStatus</returns>
-		EzDecompilerStatus DisassembleInstr(EzFunction * Func, std::unique_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId);
+		EzDecompilerStatus DisassembleInstr(EzFunction * Func, std::shared_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId);
 
 		/// <summary>
 		/// </summary> Returns the number of disassembled instructions
@@ -148,6 +163,11 @@ namespace Ez
 		/// </summary> Returns the last disassembled code to text
 		/// <returns>std::ostringstream&</returns>
 		std::ostringstream& GetLastAssembly();
+
+		/// <summary>
+		/// </summary> Frees m_Assembly & m_LastAssembly
+		void FreeDisassemblyBuffer();
+
 	private:
 
 		EzDecompilerStatus MapFunctionProto(std::uintptr_t FuncStartAddr, std::uintptr_t FuncEndAddr);

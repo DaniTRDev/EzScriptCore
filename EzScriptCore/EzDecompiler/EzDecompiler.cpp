@@ -14,10 +14,7 @@ namespace Ez
 		m_ScriptParams.clear();
 		m_Strings.clear();
 		m_Functions.clear();
-		m_Assembly.str("");
-		m_Assembly.clear();
-		m_LastAssembly.str("");
-		m_LastAssembly.clear(); /*reset m_LastAssembly*/
+		FreeDisassemblyBuffer();
 	}
 
 	const std::vector<rage::EzLocal>& EzDecompiler::GetLocals()
@@ -42,14 +39,46 @@ namespace Ez
 	{
 		return m_Script->m_CodeBlocks;
 	}
-	const std::size_t EzDecompiler::GetBlockSize()
+	const std::size_t EzDecompiler::GetCodeSize()
 	{
 		return m_CodeBuffer->GetBufferSize();
+	}
+	std::uint8_t* EzDecompiler::GetCode()
+	{
+		return m_CodeBuffer->GetData();
 	}
 
 	const std::vector<EzFunction*>& EzDecompiler::GetFunctions()
 	{
 		return m_Functions;
+	}
+
+	std::string EzDecompiler::GetScriptName()
+	{
+		return m_Script->m_ScriptName;
+	}
+
+	EzDecompilerStatus EzDecompiler::MapScript()
+	{
+		if (auto Result = MapLocals(); Result != EzDecompilerStatus::NoError)
+			return Result;
+
+		if (auto Result = MapStrings(); Result != EzDecompilerStatus::NoError)
+			return Result;
+
+		if (auto Result = MapNatives(); Result != EzDecompilerStatus::NoError)
+			return Result;
+
+		if (auto Result = MapCodeBlocks(); Result != EzDecompilerStatus::NoError)
+			return Result;
+
+		if (auto Result = MapFunctions(); Result != EzDecompilerStatus::NoError)
+			return Result;
+
+		if (auto Result = MapInstructionsFromFuncs(); Result != EzDecompilerStatus::NoError)
+			return Result;
+
+		return EzDecompilerStatus::NoError;
 	}
 
 	EzDecompilerStatus EzDecompiler::MapLocals()
@@ -222,7 +251,7 @@ namespace Ez
 
 				if (FuncStart != UINTPTR_MAX)
 				{
-					if (auto Result = MapFunctionProto(FuncStart, FuncEnd + 3);
+					if (auto Result = MapFunctionProto(FuncStart, FuncEnd + sizeof(rage::FuncEpilogue));
 						Result != EzDecompilerStatus::NoError)
 						return Result;
 				}
@@ -304,8 +333,9 @@ namespace Ez
 
 
 			default:
-				if (static_cast<int>(OpCode) > 126)
+				if (OpCode > 126)
 					return EzDecompilerStatus::UnexpectedOpCode;
+
 				break;
 			}
 		}
@@ -322,9 +352,10 @@ namespace Ez
 	{
 		for (auto& Func : m_Functions)
 		{
-			if (Func->GetFuncStartAddr() >= Offset && Offset <= Func->GetFuncEndAddr())
+			if ((Offset >= Func->GetFuncStartAddr()) && (Offset <= Func->GetFuncEndAddr()))
 				return Func;
 		}
+
 		return nullptr; /*not a valid func*/
 	}
 
@@ -364,7 +395,7 @@ namespace Ez
 		m_LastAssembly.str("");
 		m_LastAssembly.clear(); /*reset m_LastAssembly*/
 
-		auto& FuncInstrs = const_cast<std::vector<std::unique_ptr<EzInstruction>>&>
+		auto& FuncInstrs = const_cast<std::vector<std::shared_ptr<EzInstruction>>&>
 			(Func->GetInstructions());
 		m_LastAssembly << "FSTART " << Func->GetFuncIndex() << "\n";
 
@@ -373,12 +404,12 @@ namespace Ez
 			//if (FuncInstrs[i]->GetInstructionId() == rage::RageInstr::NOP)
 				//continue;
 
-			if (Func->IsAddressALoc(FuncInstrs[i]->GetStartAddr()))
-				m_LastAssembly << "loc_" << Func->GetLocIdByOffset(FuncInstrs[i]->GetStartAddr()) 
-				               << ":\n";
-			
-			else if (Func->IsAddressASwitchLoc(FuncInstrs[i]->GetStartAddr()))
-				m_LastAssembly << "switch_loc_" << Func->GetSwitchLocIdByOffset(FuncInstrs[i]->GetStartAddr()) 
+			if (Func->IsAddressASwitchLoc(FuncInstrs[i]->GetStartAddr()))
+				m_LastAssembly << "\nswitch_loc_" << Func->GetSwitchLocIdByOffset(FuncInstrs[i]->GetStartAddr())
+				<< ":\n";
+
+			else if (Func->IsAddressALoc(FuncInstrs[i]->GetStartAddr()))
+				m_LastAssembly << "\nloc_" << Func->GetLocIdByOffset(FuncInstrs[i]->GetStartAddr()) 
 				               << ":\n";
 
 			if (auto Result = DisassembleInstr(Func, FuncInstrs.data(), i);
@@ -394,14 +425,21 @@ namespace Ez
 		return EzDecompilerStatus::NoError;
 	}
 	EzDecompilerStatus EzDecompiler::DisassembleInstr(EzFunction* Func, 
-		std::unique_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId)
+		std::shared_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId)
 	{
 		auto& Instruction = Instructions[InstrId];
 		auto OpCodes = m_CodeBuffer->GetData();
 		static auto IsSwitch = false; /*used to know if we are handling any instruction inside
 									  a switch, needed for JMPs right after them*/
-		
-		m_LastAssembly << "\t" << Instruction->Id2String(); /*print instruction opcode*/
+
+		m_LastAssembly << std::hex << "0x" << Instruction->GetStartAddr() << ":\t";
+
+		for (auto i = 0; i < Instruction->GetInstructionSize(); i++)
+			m_LastAssembly << std::setw(2) << std::setfill('0') << std::hex
+			               << std::uint16_t(OpCodes[Instruction->GetStartAddr() + i]) << " "; 
+		/*print instruction opcodes*/
+ 
+		m_LastAssembly << std::dec << "\t\t" << Instruction->Id2String(); /*print instruction string*/
 
 		if (Instruction->IsCall())
 		{
@@ -470,18 +508,19 @@ namespace Ez
 			}
 
 			Func->AddSwitchLoc(BreakJumpOff);
+			Func->AddSwitchLoc(DefaultCaseJumpOff);
 			if (!IsBreakSameAsDefault)
 			{
-				m_LastAssembly << "\t\t default: JMP switch_loc_"
+				m_LastAssembly << "\t\t default = switch_loc_"
 					<< Func->GetSwitchLocIdByOffset(DefaultCaseJumpOff);
 
-				m_LastAssembly << "\t\t //break switch_loc: JMP switch_loc_"
+				m_LastAssembly << "\t\t //break = switch_loc_"
 					<< Func->GetSwitchLocIdByOffset(BreakJumpOff);
 			}
 			else
 			{
 				m_LastAssembly << "\t\t //default = break = switch_loc_"
-					<< Func->GetLocIdByOffset(DefaultCaseJumpOff);
+					<< Func->GetSwitchLocIdByOffset(DefaultCaseJumpOff);
 			}
 			
 			m_LastAssembly << "\n";
@@ -515,10 +554,13 @@ namespace Ez
 	{
 		for (auto Func : m_Functions)
 		{
-			for (auto i = 0; i < Func->GetInstructions().size(); i++)
+			if (Func->GetFuncStartAddr() <= Address && Func->GetFuncEndAddr() >= Address)
 			{
-				if (Func->GetInstructions()[i]->GetStartAddr() == Address)
-					return i;
+				for (auto i = 0; i < Func->GetInstructions().size(); i++)
+				{
+					if (Func->GetInstructions()[i]->GetStartAddr() == Address)
+						return i;
+				}
 			}
 		}
 
@@ -550,5 +592,14 @@ namespace Ez
 	std::ostringstream& EzDecompiler::GetLastAssembly()
 	{
 		return m_LastAssembly;
+	}
+
+	void EzDecompiler::FreeDisassemblyBuffer()
+	{
+		m_Assembly.clear();
+		m_Assembly.str("");
+
+		m_LastAssembly.clear();
+		m_LastAssembly.str("");
 	}
 }
