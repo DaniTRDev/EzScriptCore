@@ -168,7 +168,7 @@ namespace Ez
 
 			if (OperandCount != -1)
 			{
-				m_Instructions.push_back(std::make_unique<EzInstruction>
+				m_Instructions.push_back(std::make_shared<EzInstruction>
 					(OpCode, OpCodeId, OperandCount));
 
 				OpCodeId += OperandCount;
@@ -182,7 +182,7 @@ namespace Ez
 	{
 		return m_MappedInstructions;
 	}
-	const std::vector<std::unique_ptr<EzInstruction>>& EzFunction::GetInstructions()
+	const std::vector<std::shared_ptr<EzInstruction>>& EzFunction::GetInstructions()
 	{
 		return m_Instructions;
 	}
@@ -273,7 +273,7 @@ namespace Ez
 		auto RealJumpOffset = std::uintptr_t(OpCodeId) + JumpOffset + sizeof(rage::Jump);
 
 		AddLoc(RealJumpOffset);
-		m_Instructions.push_back(std::make_unique<EzJmp>(Instr, OpCodeId, RageJump));
+		m_Instructions.push_back(std::make_shared<EzJmp>(Instr, OpCodeId, RageJump));
 
 		OpCodeId += (sizeof(rage::Jump) - 1); /*we need to exclude JUMP opcode that's why -1*/
 		return EzDecompilerStatus::NoError;
@@ -295,15 +295,15 @@ namespace Ez
 				OpCodeId += JumpOff + (sizeof(rage::Jump) - 1);
 				break;
 			}
-			m_Instructions.push_back(std::make_unique<EzInstruction>(Instr, OpCodeId, 0));
 		}
 
+		m_Instructions.push_back(std::make_shared<EzInstruction>(Instr, OpCodeId, 0));
 		return EzDecompilerStatus::NoError;
 	}
 	EzDecompilerStatus EzFunction::GetSwitch(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
 		auto RageSwitch = (rage::FuncSwitch*)&m_OpCodes[OpCodeId];
-		auto EzSwitchInstr = std::make_unique<EzSwitch>(Instr, OpCodeId, RageSwitch);
+		auto EzSwitchInstr = std::make_shared<EzSwitch>(Instr, OpCodeId, RageSwitch);
 
 		for (auto Case : EzSwitchInstr->GetSwitchCases())
 			AddSwitchLoc(Case.second);
@@ -316,7 +316,7 @@ namespace Ez
 
 	EzDecompilerStatus EzFunction::GetCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
-		m_Instructions.push_back(std::make_unique<EzCall>(Instr, OpCodeId, 
+		m_Instructions.push_back(std::make_shared<EzCall>(Instr, OpCodeId, 
 			(rage::Call*)&m_OpCodes[OpCodeId]));
 
 		OpCodeId += sizeof(rage::Call) - 1;
@@ -324,7 +324,7 @@ namespace Ez
 	}
 	EzDecompilerStatus EzFunction::GetNativeCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
-		m_Instructions.push_back(std::make_unique<EzNativeCall>(Instr, OpCodeId, 
+		m_Instructions.push_back(std::make_shared<EzNativeCall>(Instr, OpCodeId, 
 			(rage::NativeCall*)&m_OpCodes[OpCodeId]));
 
 		OpCodeId += sizeof(rage::NativeCall) - 1; /*remove the size of native call op code*/
@@ -333,7 +333,7 @@ namespace Ez
 
 	EzDecompilerStatus EzFunction::GetVarInstr(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uint8_t Size, bool Signed)
 	{
-		m_Instructions.push_back(std::make_unique<EzVarInstr>(Instr, OpCodeId, Size, Signed));
+		m_Instructions.push_back(std::make_shared<EzVarInstr>(Instr, OpCodeId, Size, Signed));
 
 		OpCodeId += Size;
 		return EzDecompilerStatus::NoError;
@@ -341,7 +341,7 @@ namespace Ez
 
 	EzDecompilerStatus EzFunction::GetFloatPush(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
-		m_Instructions.push_back(std::make_unique<EzFloatPush>(Instr, OpCodeId));
+		m_Instructions.push_back(std::make_shared<EzFloatPush>(Instr, OpCodeId));
 
 		OpCodeId += 4;
 		return EzDecompilerStatus::NoError;
