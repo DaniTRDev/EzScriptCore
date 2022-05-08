@@ -1,0 +1,3 @@
+[submodule "vendor/variadic_table"]
+	path = vendor/variadic_table
+	url = https://github.com/friedmud/variadic_table
