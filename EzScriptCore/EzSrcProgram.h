@@ -114,7 +114,7 @@ namespace Ez
 		EzSrcProgram();
 
 		/// <summary>
-		///		<param name='std::istream'>A stream that contains the .ysc file content</param> 
+		///		<param name='Stream'>A stream that contains the .ysc file content</param> 
 		///		<param name='ExpectedSriptName'>The original script name, used to check if the parsing was good</param>  
 		/// </summary> 
 		/// <returns>EzScriptStatus</returns>
