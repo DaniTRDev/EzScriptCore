@@ -114,11 +114,11 @@ namespace Ez
 		EzSrcProgram();
 
 		/// <summary>
-		///		<param name='Stream'>The stream of the script file, should be derived from a std::ifstream</param> 
+		///		<param name='std::istream'>A stream that contains the .ysc file content</param> 
 		///		<param name='ExpectedSriptName'>The original script name, used to check if the parsing was good</param>  
 		/// </summary> 
 		/// <returns>EzScriptStatus</returns>
-		EzScriptStatus ParseHeader(std::istream& Stream, std::string ExpectedScriptName); 
+		EzScriptStatus ParseHeader(std::istream& Stream, std::string ExpectedScriptName);
 		/// <summary>
 		/// </summary> Retrieves the offsets for block, strings and their array size
 		/// <returns>EzScriptStatus</returns>
