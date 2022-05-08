@@ -373,3 +373,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/EzGlobalUpdater/am_gang_call_disam.txt
+/EzGlobalUpdater/gpb_tonya.txt
+/EzGlobalUpdater/shop_controller.txt
