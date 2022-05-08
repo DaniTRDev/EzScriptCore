@@ -39,6 +39,23 @@ workspace "EzScript"
     configurations { "Debug", "Release" }
     platforms { "x64" }
 
+    project "variadic_table"
+        location "%{prj.name}"
+        kind "None"
+        language "C++"
+
+        files {
+            "%{prj.name}/include/**.h",
+            "%{prj.name}/src/**.cpp"
+        }
+
+        includedirs {
+        }
+
+        flags { "MultiProcessorCompile" }
+
+        DeclareCommon()
+
     project "EzScriptCore"
         location "%{prj.name}"
         kind "StaticLib"
@@ -64,7 +81,7 @@ workspace "EzScript"
         includedirs {
 			"EzScriptCore",
             "EzGlobalUpdater",
-            "vendor/magic_enum"
+            "vendor/variadic_table"
         }
 
         -- PrecompiledHeaderInclude = "pch.h"
