@@ -73,10 +73,10 @@ namespace Util
 
 }
 
-#include "RageEnums.h"
+#include "Rage/RageEnums.h"
 
-#include "EzBuffer.h"
-#include "EzSrcProgram.h"
+#include "EzBuffer/EzBuffer.h"
+#include "Rage/EzSrcProgram.h"
 #include "EzInstruction/EzInstruction.h"
 #include "EzInstruction/Instructions/EzJmp.h"
 #include "EzInstruction/Instructions/EzSwitch.h"
@@ -84,8 +84,13 @@ namespace Util
 #include "EzInstruction/Instructions/EzVarInstr.h"
 #include "EzInstruction/Instructions/EzCall.h"
 #include "EzInstruction/Instructions/EzFloatPush.h"
+#include "EzInstruction/Instructions/EzSigned.h"
 #include "EzSignature/EzSignature.h"
 #include "EzFunction/EzFunction.h"
-#include "EzDecompiler/EzDecompiler.h"
+#include "EzDisassembler/EzDisassembler.h"
+#include "EzAssembler/EzAsmFunc.h"
+#include "EzAssembler/EzCodeHolder.h"
+#include "EzAssembler/EzAssembler.h"
+#include "EzException/EzException.h"
 
 #endif //PCH_H
