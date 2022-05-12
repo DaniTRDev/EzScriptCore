@@ -8,7 +8,7 @@ namespace Ez
 		m_IsOperandSigned = Signed;
 
 		switch (Instr)
-		{
+		{			
 		case rage::STATIC_U8:
 		case rage::STATIC_U16:
 			m_IsStatic = true;

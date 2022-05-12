@@ -2,7 +2,7 @@
 
 namespace Ez
 {
-	enum class EzDecompilerStatus;
+	enum class EzDisassemblerStatus;
 
 	class EzSwitch : public EzInstruction
 	{
@@ -12,7 +12,7 @@ namespace Ez
 
 	private:
 
-		EzDecompilerStatus AddCase(std::int32_t CaseIndex, std::uintptr_t JumpOffset);
+		void AddCase(std::int32_t CaseIndex, std::uintptr_t JumpOffset);
 	};
 }
 

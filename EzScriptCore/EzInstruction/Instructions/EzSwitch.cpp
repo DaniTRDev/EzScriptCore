@@ -15,25 +15,24 @@ namespace Ez
 			they'll fuck the entire struct since we need contiguous memory*/
 
 			auto CaseVal = Case.m_CaseVal; /*relative to function*/
-			auto RealJumpOffset = OpCodeId + 8 + 
+			auto RealJumpOffset = OpCodeId + 8 +
 				i * sizeof(rage::FuncSwitchCase) + Case.m_JumpOffset; /*relative to buffer*/
 
-			if (auto Result = AddCase(Case.m_CaseVal, RealJumpOffset);
-				Result != EzDecompilerStatus::NoError)
-
-				throw std::runtime_error(std::to_string(static_cast<std::uint8_t>(Result)));
+			AddCase(Case.m_CaseVal, RealJumpOffset);
 		}
 
 	}
 
-	EzDecompilerStatus EzSwitch::AddCase(std::int32_t CaseIndex, std::uintptr_t JumpOffset)
+	void EzSwitch::AddCase(std::int32_t CaseIndex, std::uintptr_t JumpOffset)
 	{
 		/*8 = bytes for the switch param*/
 		if (auto It = m_Cases.find(CaseIndex); It != m_Cases.end())
-			return EzDecompilerStatus::DuplicatedSwitchCase;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionInfo("std::int32_t")
+			.SetExceptionInfo("Could not add case for switch because it has already been added!");
 
 		m_Cases.insert({ CaseIndex, JumpOffset });
 
-		return EzDecompilerStatus::NoError;
 	}
 }
