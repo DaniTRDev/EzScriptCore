@@ -2,7 +2,7 @@
 
 namespace Ez
 {
-	enum class EzDecompilerStatus;
+	enum class EzDisassemblerStatus;
 
 	class EzFunction
 	{
@@ -19,21 +19,15 @@ namespace Ez
 			std::uintptr_t EndAddress, std::uintptr_t Index, rage::FuncPrologue * Prologue, rage::FuncEpilogue* Epilogue);
 		~EzFunction();
 
-		EzDecompilerStatus MapInstructions();
+		void MapInstructions();
 		std::size_t GetMappedInstructions();
 		const std::vector<std::shared_ptr<EzInstruction>>& GetInstructions();
 
 		void AddLoc(std::uintptr_t Address);
 		const std::map<std::uintptr_t, std::uintptr_t>& GetLocs();
-		const std::uintptr_t& GetLocIdByOffset(std::uintptr_t Offset);
+		std::uintptr_t GetLocIdByOffset(std::uintptr_t Offset);
 
 		bool IsAddressALoc(std::uintptr_t Address);
-
-		void AddSwitchLoc(std::uintptr_t Address);
-		const std::map<std::uintptr_t, std::uintptr_t>& GetSwitchLocs();
-		const std::uintptr_t& GetSwitchLocIdByOffset(std::uintptr_t Offset);
-
-		bool IsAddressASwitchLoc(std::uintptr_t Address);
 
 		std::size_t GetFuncIndex();
 
@@ -45,18 +39,20 @@ namespace Ez
 
 	private:
 
-		EzDecompilerStatus GetJump(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uintptr_t FuncEnd);
-		EzDecompilerStatus GetDup(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
+		void GetJump(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uintptr_t FuncEnd);
+		void GetDup(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
 
-		EzDecompilerStatus GetSwitch(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
+		void GetSwitch(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
 
-		EzDecompilerStatus GetCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
-		EzDecompilerStatus GetNativeCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
+		void GetCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
+		void GetNativeCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
 
-		EzDecompilerStatus GetVarInstr(rage::RageInstr Instr, std::uintptr_t& OpCodeId, 
+		void GetVarInstr(rage::RageInstr Instr, std::uintptr_t& OpCodeId, 
 			std::uint8_t Size, bool Signed); /*globals, locals and statics*/
 
-		EzDecompilerStatus GetFloatPush(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
+		void GetFloatPush(rage::RageInstr Instr, std::uintptr_t& OpCodeId);
+
+		void GetSigned(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uint8_t Size);
 
 	private:
 
@@ -66,7 +62,6 @@ namespace Ez
 
 		/*address, ID*/
 		std::map<std::uintptr_t, std::uintptr_t> m_Locs;
-		std::map<std::uintptr_t, std::uintptr_t> m_SwitchLocs;
 
 		std::uint8_t* m_OpCodes; 
 

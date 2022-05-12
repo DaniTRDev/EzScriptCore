@@ -19,13 +19,18 @@ namespace Ez
 		m_MappedInstructions = 0;
 	}
 
-	EzDecompilerStatus EzFunction::MapInstructions()
+	void EzFunction::MapInstructions()
 	{
 		/*for predecompilation we don't need func epilogue*/
+
 		auto StartOff = m_StartAddr + m_Prologue->m_FuncNameLenght + sizeof(rage::FuncPrologue);
+		auto ASd = m_OpCodes[m_StartAddr];
 		for (auto OpCodeId = StartOff; OpCodeId < m_EndAddr - sizeof(rage::FuncEpilogue); OpCodeId++)
 		{
-			auto OpCode = static_cast<rage::RageInstr>(m_OpCodes[OpCodeId]);
+			auto RawOp = m_OpCodes[OpCodeId];
+			auto Offset = OpCodeId - m_StartAddr;
+			auto Offset2 = m_EndAddr - m_StartAddr;
+			auto OpCode = rage::RageInstr(m_OpCodes[OpCodeId]);
 			std::int32_t OperandCount = -1;
 			/*-1 -> tells our predecompiler we are going to handle the opcode on our own*/
 
@@ -63,7 +68,10 @@ namespace Ez
 				break;
 
 			case rage::ENTER: /*there can't be enter opcodes, we skipped them */
-				return EzDecompilerStatus::UnexpectedOpCode;
+				throw EzException().SetExceptionClass(typeid(this).name())
+					.SetExceptionFunc(__func__)
+					.SetExceptionName("Unexpected opcode")
+					.SetExceptionInfo("Didn't expect an ENTER (45) opcode when mapping function' instructions");
 
 			case rage::LEAVE:
 				OperandCount = sizeof(rage::FuncEpilogue) - 1; /*exclude the opcode*/
@@ -99,6 +107,10 @@ namespace Ez
 			case rage::IOFFSET_S16:
 			case rage::IOFFSET_S16_LOAD:
 			case rage::IOFFSET_S16_STORE:
+				GetSigned(OpCode, OpCodeId, 2);
+				OperandCount = -1;
+				break;
+
 			case rage::ARRAY_U16:
 			case rage::ARRAY_U16_LOAD:
 			case rage::ARRAY_U16_STORE:
@@ -160,7 +172,11 @@ namespace Ez
 
 			default:
 				if (OpCode > 126)
-					return EzDecompilerStatus::UnexpectedOpCode;
+					throw EzException().SetExceptionClass(typeid(this).name())
+					.SetExceptionFunc(__func__)
+					.SetExceptionName("Unexpected opcode")
+					.SetExceptionInfo("Didn't expect an opcode greater than 126 when mapping function' instructions");
+
 
 				OperandCount = 0; /*instrs without operands*/
 				break;
@@ -176,7 +192,6 @@ namespace Ez
 		}
 
 		m_MappedInstructions = m_Instructions.size();
-		return EzDecompilerStatus::NoError;
 	}
 	std::size_t EzFunction::GetMappedInstructions()
 	{
@@ -196,7 +211,7 @@ namespace Ez
 		return m_Locs;
 	}
 
-	const std::uintptr_t& EzFunction::GetLocIdByOffset(std::uintptr_t Offset)
+	std::uintptr_t EzFunction::GetLocIdByOffset(std::uintptr_t Offset)
 	{
 		if (auto It = m_Locs.find(Offset); It != m_Locs.end())
 			return m_Locs[Offset];
@@ -207,34 +222,6 @@ namespace Ez
 	bool EzFunction::IsAddressALoc(std::uintptr_t Address)
 	{
 		for (auto& Loc : m_Locs)
-		{
-			if (Loc.first == Address)
-				return true;
-		}
-		return false;
-	}
-
-	void EzFunction::AddSwitchLoc(std::uintptr_t Address)
-	{
-		m_SwitchLocs.insert({ Address, m_SwitchLocs.size() });
-	}
-
-	const std::map<std::uintptr_t, std::uintptr_t>& EzFunction::GetSwitchLocs()
-	{
-		return m_SwitchLocs;
-	}
-
-	const std::uintptr_t& EzFunction::GetSwitchLocIdByOffset(std::uintptr_t Offset)
-	{
-		if (auto It = m_SwitchLocs.find(Offset); It != m_SwitchLocs.end())
-			return m_SwitchLocs[Offset];
-
-		return UINTPTR_MAX;
-	}
-
-	bool EzFunction::IsAddressASwitchLoc(std::uintptr_t Address)
-	{
-		for (auto& Loc : m_SwitchLocs)
 		{
 			if (Loc.first == Address)
 				return true;
@@ -264,7 +251,7 @@ namespace Ez
 		return m_Epilogue;
 	}
 
-	EzDecompilerStatus EzFunction::GetJump(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uintptr_t FuncEnd)
+	void EzFunction::GetJump(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uintptr_t FuncEnd)
 	{
 		auto RageJump = (rage::Jump*)&m_OpCodes[OpCodeId];
 		auto JumpOffset = RageJump->m_JumpOffset; /*relative to function*/
@@ -272,13 +259,22 @@ namespace Ez
 		/*relative to m_OpCodes*/
 		auto RealJumpOffset = std::uintptr_t(OpCodeId) + JumpOffset + sizeof(rage::Jump);
 
-		AddLoc(RealJumpOffset);
-		m_Instructions.push_back(std::make_shared<EzJmp>(Instr, OpCodeId, RageJump));
+		if (RealJumpOffset)
+		{
+			AddLoc(RealJumpOffset);
+			m_Instructions.push_back(std::make_shared<EzJmp>(Instr, OpCodeId, RageJump));
+		}
+		else
+		{
+			m_Instructions.push_back(std::make_shared<EzInstruction>(rage::RageInstr::NOP, OpCodeId, 0));
+			m_Instructions.push_back(std::make_shared<EzInstruction>(rage::RageInstr::NOP, OpCodeId + 1, 0));
+			m_Instructions.push_back(std::make_shared<EzInstruction>(rage::RageInstr::NOP, OpCodeId + 2, 0));
+		}
 
 		OpCodeId += (sizeof(rage::Jump) - 1); /*we need to exclude JUMP opcode that's why -1*/
-		return EzDecompilerStatus::NoError;
+		
 	}
-	EzDecompilerStatus EzFunction::GetDup(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
+	void EzFunction::GetDup(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
 		for (auto JumpOff = 1;; JumpOff++) /*we are skipping conditional instructions here, they'll need to be decompiled directly*/
 		{
@@ -293,58 +289,60 @@ namespace Ez
 			if (m_OpCodes[OpCodeId + JumpOff] == rage::RageInstr::JZ)
 			{
 				OpCodeId += JumpOff + (sizeof(rage::Jump) - 1);
-				break;
+				return;
 			}
+
+			break;
 		}
 
 		m_Instructions.push_back(std::make_shared<EzInstruction>(Instr, OpCodeId, 0));
-		return EzDecompilerStatus::NoError;
 	}
-	EzDecompilerStatus EzFunction::GetSwitch(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
+	void EzFunction::GetSwitch(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
 		auto RageSwitch = (rage::FuncSwitch*)&m_OpCodes[OpCodeId];
 		auto EzSwitchInstr = std::make_shared<EzSwitch>(Instr, OpCodeId, RageSwitch);
 
 		for (auto Case : EzSwitchInstr->GetSwitchCases())
-			AddSwitchLoc(Case.second);
+			AddLoc(Case.second);
 
 		m_Instructions.push_back(std::move(EzSwitchInstr));
 		OpCodeId += (1 + sizeof(rage::FuncSwitchCase) * RageSwitch->m_NumCases);
-
-		return EzDecompilerStatus::NoError;
 	}
 
-	EzDecompilerStatus EzFunction::GetCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
+	void EzFunction::GetCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
 		m_Instructions.push_back(std::make_shared<EzCall>(Instr, OpCodeId, 
 			(rage::Call*)&m_OpCodes[OpCodeId]));
 
-		OpCodeId += sizeof(rage::Call) - 1;
-		return EzDecompilerStatus::NoError;
+		OpCodeId += sizeof(rage::Call) - 1;	
 	}
-	EzDecompilerStatus EzFunction::GetNativeCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
+	void EzFunction::GetNativeCall(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
 		m_Instructions.push_back(std::make_shared<EzNativeCall>(Instr, OpCodeId, 
 			(rage::NativeCall*)&m_OpCodes[OpCodeId]));
 
-		OpCodeId += sizeof(rage::NativeCall) - 1; /*remove the size of native call op code*/
-		return EzDecompilerStatus::NoError;
+		OpCodeId += sizeof(rage::NativeCall) - 1; /*remove the size of native call op code*/	
 	}
 
-	EzDecompilerStatus EzFunction::GetVarInstr(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uint8_t Size, bool Signed)
+	void EzFunction::GetVarInstr(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uint8_t Size, bool Signed)
 	{
 		m_Instructions.push_back(std::make_shared<EzVarInstr>(Instr, OpCodeId, Size, Signed));
 
 		OpCodeId += Size;
-		return EzDecompilerStatus::NoError;
 	}
 
-	EzDecompilerStatus EzFunction::GetFloatPush(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
+	void EzFunction::GetFloatPush(rage::RageInstr Instr, std::uintptr_t& OpCodeId)
 	{
 		m_Instructions.push_back(std::make_shared<EzFloatPush>(Instr, OpCodeId));
 
 		OpCodeId += 4;
-		return EzDecompilerStatus::NoError;
+	}
+
+	void EzFunction::GetSigned(rage::RageInstr Instr, std::uintptr_t& OpCodeId, std::uint8_t Size)
+	{
+		m_Instructions.push_back(std::make_shared<EzSigned>(Instr, OpCodeId, Size));
+
+		OpCodeId += Size;
 	}
 	
 }
