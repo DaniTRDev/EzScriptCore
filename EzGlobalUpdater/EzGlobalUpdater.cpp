@@ -17,35 +17,34 @@ using ScriptTable_t = VariadicTable<std::string, std::size_t, std::size_t, std::
 ScriptTable_t ScriptTable({ "Name", "Locals", "Script Params", "String", "Natives",
         "Blocks", "Total Code Lenght", "Functions", "Instructions" });
 
-void AddNewScript2Table(Ez::EzDecompiler* Decompiler)
+void AddNewScript2Table(Ez::EzDisassembler* Disassembler)
 {
-    ScriptTable.addRow(Decompiler->GetScriptName(), Decompiler->GetLocals().size(), 
-        Decompiler->GetScriptParams().size(), Decompiler->GetStrings().size(), 
-        Decompiler->GetNatives().size(), Decompiler->GetBlocksNumber(), Decompiler->GetCodeSize(),
-        Decompiler->GetFunctions().size(), Decompiler->GetMappedInstructions());
+    ScriptTable.addRow(Disassembler->GetScriptName(), Disassembler->GetLocals().size(),
+        Disassembler->GetScriptParams().size(), Disassembler->GetStrings().size(),
+        Disassembler->GetNatives().size(), Disassembler->GetBlocksNumber(), Disassembler->GetCodeSize(),
+        Disassembler->GetFunctions().size(), Disassembler->GetMappedInstructions());
 }
 
-void TestSignatureCreation(Ez::EzDecompiler& Decompiler)
+void TestSignatureCreation(Ez::EzDisassembler* Disassembler, std::uintptr_t Addr)
 {
-    auto TestAddr = 0xad;
-    auto Func = Decompiler.GetFuncFromOffset(TestAddr);
+    auto Func = Disassembler->GetFuncFromOffset(Addr);
     auto& Instrs = const_cast<std::vector<std::shared_ptr<Ez::EzInstruction>>&>
         (Func->GetInstructions());
 
     auto Signature = Ez::EzSignature();
-    Signature.SetSignatureContext(Decompiler.GetCode(), Decompiler.GetCodeSize(),
+    Signature.SetSignatureContext(Disassembler->GetCode(), Disassembler->GetCodeSize(),
         Instrs.data(), Instrs.size(), Ez::rage::RageResourceVersion::RRV_MinusThan10);
 
-    auto Res = Signature.CreateAtAddress(TestAddr);
+    Signature.CreateAtAddress(Addr);
     auto SigStr = Signature.GetSignature();
 
     auto Found = Signature.ScanFromNewSig(SigStr);
 
-    std::cout << "Created signature at: 0x" << std::hex << TestAddr
+    std::cout << "Created signature of script " << Disassembler->GetScriptName() << " at : 0x" << std::hex << Addr
         << "\t: " << Signature.GetSignature() << std::endl;
 }
 
-Ez::EzDecompiler * OpenScript(std::filesystem::path InPath, std::filesystem::path OutPath)
+Ez::EzDisassembler* OpenScript(std::filesystem::path InPath, std::filesystem::path OutPath)
 {
     std::ifstream InStream(InPath.string(), std::ios::in | std::ios::binary);
     std::ofstream OutStream(OutPath.string(), std::ios::out | std::ios::binary | std::ios::trunc);
@@ -62,47 +61,49 @@ Ez::EzDecompiler * OpenScript(std::filesystem::path InPath, std::filesystem::pat
     }
 
     auto Script = new Ez::EzSrcProgram();
+    Script->ParseHeader(InStream, "");
 
-    if (auto Result = Script->ParseHeader(InStream, ""); Result != Ez::EzScriptStatus::NoError)
-    {
-        std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
-        return nullptr;
-    }
+    auto Disassembler = new Ez::EzDisassembler(Script);
+    Disassembler->MapScript();
+    Disassembler->Disassemble();
 
-    auto Decompiler = new Ez::EzDecompiler(Script);
-
-    if (auto Result = Decompiler->MapScript(); Result != Ez::EzDecompilerStatus::NoError)
-        std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
-
-    if (auto Result = Decompiler->Disassemble(); Result != Ez::EzDecompilerStatus::NoError)
-        std::cout << "Error " << static_cast<std::uint32_t>(Result) << std::endl;
-
-    auto& Assembly = Decompiler->GetAssembly();
+    auto& Assembly = Disassembler->GetAssembly();
     OutStream << Assembly.str() << std::endl;
 
-    AddNewScript2Table(Decompiler);
+    AddNewScript2Table(Disassembler);
 
-    Decompiler->FreeDisassemblyBuffer();
+    Disassembler->FreeDisassemblyBuffer();
     InStream.close();
     OutStream.close();
 
-    return Decompiler;
+    return Disassembler;
 }
 
 void UpdateGlobals()
 {
-    auto CurrentPath = std::filesystem::current_path();
+    try
+    {
+        auto CurrentPath = std::filesystem::current_path();
 
-    auto Script1 =  OpenScript(CurrentPath / "am_gang_call.ysc.full", 
-        CurrentPath / "am_gang_call_disam.txt");
+        auto Script1 = OpenScript(CurrentPath / "am_gang_call.ysc.full",
+            CurrentPath / "am_gang_call_disam.txt");
 
-    auto Script2 = OpenScript(CurrentPath / "gpb_tonya.ysc.full",
-        CurrentPath / "gpb_tonya.txt");
+        auto Script2 = OpenScript(CurrentPath / "gpb_tonya.ysc.full",
+            CurrentPath / "gpb_tonya.txt");
 
-    auto Script3 = OpenScript(CurrentPath / "shop_controller.ysc.full",
-        CurrentPath / "shop_controller.txt");
+        auto Script3 = OpenScript(CurrentPath / "shop_controller.ysc.full",
+            CurrentPath / "shop_controller.txt");
 
-    ScriptTable.print(std::cout);
+        TestSignatureCreation(Script1, 0xad);
+        TestSignatureCreation(Script2, 0x143);
+        TestSignatureCreation(Script3, 0xe309);
+
+        ScriptTable.print(std::cout);
+    }
+    catch (Ez::EzException& exp)
+    {
+        std::cout << "Error while disassembling script, error info: \t" << exp.what();
+    }
 }
 
 int main()
