@@ -67,12 +67,16 @@ namespace Ez
 		{
 		case 1:
 			return std::int8_t(OpCodes[m_StartAddr + 1]);
+
 		case 2:
-			return *(std::int16_t*)&OpCodes[m_StartAddr + 1];
-		
+		{
+			auto Bytes = (std::uint8_t*)(&OpCodes[m_StartAddr + 1]);
+			return Util::Bits2I16(Bytes[1], Bytes[0]);
+		}
+
 		case 3: /*24bits*/
 		{
-			auto Bytes = (std::int8_t*)(&OpCodes[m_StartAddr + 1]);
+			auto Bytes = (std::uint8_t*)(&OpCodes[m_StartAddr + 1]);
 			return Util::Bits2I32(Bytes[2], Bytes[1], Bytes[0], 0);
 		}
 
@@ -80,6 +84,8 @@ namespace Ez
 			return *(std::int32_t*)&OpCodes[m_StartAddr + 1];
 
 		}
+
+		return INT32_MAX;
 	}
 	std::uint32_t EzInstruction::GetOperandsU32(std::uint8_t* OpCodes)
 	{
@@ -100,6 +106,7 @@ namespace Ez
 			return *(std::uint32_t*)&OpCodes[m_StartAddr + 1];
 
 		}
+		return UINT32_MAX;
 	}
 
 	std::uint16_t EzInstruction::GetNativeIndex()
