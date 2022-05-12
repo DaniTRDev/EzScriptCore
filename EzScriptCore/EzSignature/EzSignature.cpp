@@ -2,24 +2,38 @@
 
 namespace Ez
 {
-	EzSignatureStatus EzSignature::SetSignatureContext(
+	void EzSignature::SetSignatureContext(
 		std::uint8_t* OpCodes, std::size_t OpCodeNum, std::shared_ptr<EzInstruction>* Instructions, 
 		std::size_t NumInstrs, rage::RageResourceVersion Version)
 	{
 		if (m_Instructions)
-			return EzSignatureStatus::ContextAlreadySet;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionInfo("Could not set signature context it has already been set!");
 
 		else if (!OpCodes)
-			return EzSignatureStatus::InvalidOpCodes;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionName("std::uint8_t*")
+			.SetExceptionInfo("Could not set signature context because opcodes array is not valid!");
 
 		else if (!OpCodeNum)
-			return EzSignatureStatus::InvalidOpCodeCount;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionName("std::size_t")
+			.SetExceptionInfo("Could not set signature context because opcodes number is not valid!");
 
 		else if (!Instructions)
-			return EzSignatureStatus::InvalidInstructionArray;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionName("std::shared_ptr<EzInstruction>*")
+			.SetExceptionInfo("Could not set signature context because instructions array is not valid!");
 
 		else if (!NumInstrs)
-			return EzSignatureStatus::InvalidInstructionCount;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionName("std::istream&")
+			.SetExceptionInfo("Could not create buffer from std::istream because it is not valid!");
 
 		m_OpCodes = OpCodes;
 		m_NumOpCodes = OpCodeNum;
@@ -28,14 +42,14 @@ namespace Ez
 		m_Version = Version;
 		m_SignatureAddress = 0;
 		m_FoundAddress = 0;
-
-		return EzSignatureStatus::NoError;
 	}
 
-	EzSignatureStatus EzSignature::CreateAtAddress(std::uintptr_t Address)
+	void EzSignature::CreateAtAddress(std::uintptr_t Address)
 	{
 		if (!m_Instructions)
-			return EzSignatureStatus::ContextNotSet;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionInfo("Could not create signature because context is not set!");
 
 		m_SignatureAddress = Address;
 		bool AreWeOnCorrectAddr = false;
@@ -43,7 +57,7 @@ namespace Ez
 		{
 			auto Instruction = m_Instructions[i];
 			auto InstructionBytes = &m_OpCodes[Instruction->GetStartAddr()];
-			EzSignatureInstr SigInstr{ Instruction->GetStartAddr(), Instruction->GetInstructionSize(), false};
+			EzSignatureInstr SigInstr{ Instruction->GetStartAddr(), Instruction->GetInstructionSize(), false };
 
 			if (!AreWeOnCorrectAddr)
 			{
@@ -59,21 +73,45 @@ namespace Ez
 			{
 				SigInstr.m_HasWildCards = true;
 			}
-			
+			else if (Instruction->IsSwitch())
+			{ /*we need to specifically check for this instruction because of the particular
+				way RAGE's interpreter handle it*/
+
+				AddByte(Instruction->GetInstructionId()); /*add the opcode to the sig*/
+				AddWildCards(sizeof(rage::FuncSwitch::m_NumCases) / sizeof(std::uint8_t)); 
+				/*in case r* add more cases put the case number as a wildcard*/
+
+				for (auto& Case : Instruction->GetSwitchCases()) 
+					/*loop throught each case and add it to the signature*/
+				{
+					auto CaseVal = Case.first;
+
+					AddBytes((std::uint8_t*)&CaseVal, sizeof(CaseVal));
+					AddWildCards(sizeof(rage::FuncSwitchCase::m_JumpOffset));
+					/*put as many wildcards as jump offset's size*/
+
+					if (CheckForSigMatchAddr(m_Signature.str()))
+						return; /*we got a good sig, no need of adding more instructions to sig*/
+					
+				}
+
+				continue; /*if we finished adding switch opcodes to the sig and still don't have
+						  a good sig, we are going to add more instructions, so kip the switch that
+						  has already been added*/
+			}
+
 			AddInstruction(SigInstr);
 
-			auto IsSigValid = ScanFromNewSig(m_Signature.str()) == EzSignatureStatus::NoError;
-
-			if (IsSigValid) /*sig had a match, lets check if it's the one we want*/
-			{
-				if (m_FoundAddress == m_SignatureAddress)
-					return EzSignatureStatus::NoError;
-			}
+			if (CheckForSigMatchAddr(m_Signature.str()))
+				return;
 		}
 
-		return EzSignatureStatus::CouldNotCreateSignatureForAddress;
+		throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionName("std::istream&")
+			.SetExceptionInfo("Could not create signature for this address!");
 	}
-	EzSignatureStatus EzSignature::ScanFromNewSig(std::string Signature)
+	bool EzSignature::ScanFromNewSig(std::string Signature)
 	{
 		m_Signature.clear();
 		m_Signature.str("");
@@ -86,43 +124,45 @@ namespace Ez
 		return ScanAtAddress(0); /*0 is the starting addr of m_OpCodes array*/
 	}
 
-	EzSignatureStatus EzSignature::ScanAtAddress(std::uintptr_t Address)
+	bool EzSignature::ScanAtAddress(std::uintptr_t Address)
 	{
 		if (!m_Instructions)
-			return EzSignatureStatus::ContextNotSet;
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionInfo("Could not scan for signature because context is not set!");
 
 		for (auto OpCodeId = 0; OpCodeId < m_NumOpCodes; OpCodeId++)
 		{
 			auto Bytes = (std::uint8_t*)&m_OpCodes[OpCodeId];
 			for (auto i = 0; i < m_SignatureBytes.size(); i++)
 			{
-				if (m_SignatureBytes[i] == 0) /*wildcard*/
+				if (m_SignatureBytes[i].m_IsWildCard)
 				{
-					goto SigPosibleMatchFound;
+					goto PosibleMatch;
 					continue;
 				}
 
-				else if (m_SignatureBytes[i] != Bytes[i])
+				else if (m_SignatureBytes[i].m_Byte != Bytes[i])
 					break;
-			
 
-				SigPosibleMatchFound:
+				PosibleMatch:
 				if (i == (m_SignatureBytes.size() - 1))
 				{
 					m_FoundAddress = OpCodeId;
-					return EzSignatureStatus::NoError;
+					return true;
 				}
+			
 			}
 		}
 
-		return EzSignatureStatus::CouldNotRetrieveSignatureForAddress;
+		return false;
 	}
 
 	std::string EzSignature::GetSignature()
 	{
 		return m_Signature.str();
 	}
-	EzSignatureStatus EzSignature::Signature2Bytes()
+	void EzSignature::Signature2Bytes()
 	{
 		auto Str = m_Signature.str();
 
@@ -136,7 +176,7 @@ namespace Ez
 				if (Str[i + std::uint64_t(1)] == '?')
 					i++;
 
-				m_SignatureBytes.push_back(0); /*we don't take care of wildcards*/
+				m_SignatureBytes.push_back({ 0, true }); /*we don't take care of wildcards*/
 
 				continue;
 			}
@@ -145,22 +185,23 @@ namespace Ez
 
 			auto ConvertedBytes = strtoull(Bytes, nullptr, 16);
 
-			m_SignatureBytes.push_back(std::uint8_t(ConvertedBytes));
+			m_SignatureBytes.push_back({ std::uint8_t(ConvertedBytes), false });
 
 			i++;
 		}
-
-		return EzSignatureStatus::NoError;
 	}
 
 	void EzSignature::AddWhiteSpace()
 	{
 		m_Signature << " ";
 	}
-	void EzSignature::AddWildCard()
+	void EzSignature::AddWildCards(std::uint8_t Num)
 	{
-		AddWhiteSpace();
-		m_Signature << "?";
+		for (std::uint8_t i = 0; i < Num; i++)
+		{
+			AddWhiteSpace();
+			m_Signature << "?";
+		}
 	}
 
 	void EzSignature::AddByte(std::uint8_t Byte)
@@ -168,16 +209,30 @@ namespace Ez
 		AddWhiteSpace();
 		m_Signature << std::setw(2) << std::setfill('0') << std::hex << std::uint16_t(Byte);
 	}
+	void EzSignature::AddBytes(std::uint8_t* Bytes, std::size_t NumBytes)
+	{
+		for (std::size_t i = 0; i < NumBytes; i++)
+			AddByte(Bytes[i]);	
+	}
 	void EzSignature::AddInstruction(const EzSignatureInstr& Instr)
 	{
 		for (auto i = Instr.m_Address; i < Instr.m_Address + Instr.m_Size; i++)
 		{
 			if (Instr.m_HasWildCards && (i != Instr.m_Address))
-				AddWildCard();
+				AddWildCards();
 
 			else
 				AddByte(m_OpCodes[i]);
 
 		}
+	}
+
+	bool EzSignature::CheckForSigMatchAddr(std::string Sig)
+	{
+		if (ScanFromNewSig(m_Signature.str()))
+			/*sig had a match, lets check if it's the one we want*/
+			return (m_FoundAddress == m_SignatureAddress);
+
+		return false;
 	}
 }

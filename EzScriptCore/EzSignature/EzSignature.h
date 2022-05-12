@@ -2,18 +2,6 @@
 
 namespace Ez
 {
-	enum class EzSignatureStatus
-	{
-		ContextNotSet,
-		ContextAlreadySet,
-		InvalidInstructionArray, 
-		InvalidInstructionCount,
-		InvalidOpCodes,
-		InvalidOpCodeCount,
-		CouldNotCreateSignatureForAddress,
-		CouldNotRetrieveSignatureForAddress,
-		NoError
-	};
 
 	struct EzSignatureInstr
 	{
@@ -23,28 +11,37 @@ namespace Ez
 							opcode which is the instruction id the rest will be filled with '?'*/
 	};
 
+	struct EzSignatureByte
+	{
+		std::uint8_t m_Byte;
+		bool m_IsWildCard;
+	};
+
 	class EzSignature
 	{
 	public:
 
-		EzSignatureStatus SetSignatureContext(std::uint8_t* OpCodes, std::size_t OpCodeNum,
+		void SetSignatureContext(std::uint8_t* OpCodes, std::size_t OpCodeNum,
 			std::shared_ptr<EzInstruction>* Instructions, std::size_t NumInstrs, rage::RageResourceVersion Version);
 
-		EzSignatureStatus CreateAtAddress(std::uintptr_t Address);
-		EzSignatureStatus ScanFromNewSig(std::string Signature);
+		void CreateAtAddress(std::uintptr_t Address);
+		bool ScanFromNewSig(std::string Signature);
 
-		EzSignatureStatus ScanAtAddress(std::uintptr_t Address);
+		bool ScanAtAddress(std::uintptr_t Address);
 
 		std::string GetSignature();
-		EzSignatureStatus Signature2Bytes();
+		void Signature2Bytes();
 
 	private:
 
 		void AddWhiteSpace();
-		void AddWildCard();
+		void AddWildCards(std::uint8_t Num = 1);
 
 		void AddByte(std::uint8_t Byte);
+		void AddBytes(std::uint8_t* Bytes, std::size_t NumBytes);
 		void AddInstruction(const EzSignatureInstr& Instr);
+
+		bool CheckForSigMatchAddr(std::string Sig);
 
 	private:
 		std::shared_ptr<EzInstruction>* m_Instructions;
@@ -59,7 +56,7 @@ namespace Ez
 	
 	
 		std::ostringstream m_Signature;
-		std::vector<std::uint8_t> m_SignatureBytes;
+		std::vector<EzSignatureByte> m_SignatureBytes;
 	};
 }
 
