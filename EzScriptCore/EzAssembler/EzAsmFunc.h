@@ -2,11 +2,13 @@
 
 namespace Ez
 {
-	using AsmFuncHandler = void();
+	using AsmFuncHandler = void(EzPtr<EzAssemblerStateNode> Node);
 
 	class EzAsmFunc
 	{
 	public:
+
+		friend class EzAssembler;
 
 		EzAsmFunc(std::string_view Name, std::uint32_t ParamCount, std::uint32_t ReturnSize);
 
@@ -17,6 +19,10 @@ namespace Ez
 		std::uint32_t GetParamCount();
 		std::uint32_t GetReturnSize();
 		std::uint32_t GetVarCount();
+
+	private:
+
+		void CallHandler(EzPtr<EzAssemblerStateNode> Node);
 
 	private:
 

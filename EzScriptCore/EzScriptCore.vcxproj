@@ -22,13 +22,13 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -59,6 +59,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -92,35 +93,49 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="EzBuffer.h" />
-    <ClInclude Include="EzDecompiler\EzDecompiler.h" />
-    <ClInclude Include="EzDecompiler\EzVariables.h" />
+    <ClInclude Include="EzAssembler\EzAsmFunc.h" />
+    <ClInclude Include="EzAssembler\EzAsmInstruction.h" />
+    <ClInclude Include="EzAssembler\EzAssembler.h" />
+    <ClInclude Include="EzAssembler\EzAssemblerStateNode.h" />
+    <ClInclude Include="EzAssembler\EzCodeHolder.h" />
+    <ClInclude Include="EzBuffer\EzBuffer.h" />
+    <ClInclude Include="EzDisassembler\EzDisassembler.h" />
+    <ClInclude Include="EzDisassembler\EzVariables.h" />
+    <ClInclude Include="EzException\EzException.h" />
     <ClInclude Include="EzFunction\EzFunction.h" />
     <ClInclude Include="EzInstruction\EzInstruction.h" />
     <ClInclude Include="EzInstruction\Instructions\EzCall.h" />
     <ClInclude Include="EzInstruction\Instructions\EzFloatPush.h" />
     <ClInclude Include="EzInstruction\Instructions\EzJmp.h" />
     <ClInclude Include="EzInstruction\Instructions\EzNativeCall.h" />
+    <ClInclude Include="EzInstruction\Instructions\EzSigned.h" />
     <ClInclude Include="EzInstruction\Instructions\EzSwitch.h" />
     <ClInclude Include="EzInstruction\Instructions\EzVarInstr.h" />
     <ClInclude Include="EzSignature\EzSignature.h" />
-    <ClInclude Include="EzSrcProgram.h" />
-    <ClInclude Include="RageEnums.h" />
+    <ClInclude Include="Rage\EzSrcProgram.h" />
+    <ClInclude Include="Rage\RageEnums.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EzBuffer.cpp" />
-    <ClCompile Include="EzDecompiler\EzDecompiler.cpp" />
+    <ClCompile Include="EzAssembler\EzAsmFunc.cpp" />
+    <ClCompile Include="EzAssembler\EzAsmInstruction.cpp" />
+    <ClCompile Include="EzAssembler\EzAssembler.cpp" />
+    <ClCompile Include="EzAssembler\EzAssemblerStateNode.cpp" />
+    <ClCompile Include="EzAssembler\EzCodeHolder.cpp" />
+    <ClCompile Include="EzBuffer\EzBuffer.cpp" />
+    <ClCompile Include="EzDisassembler\EzDisassembler.cpp" />
+    <ClCompile Include="EzException\EzException.cpp" />
     <ClCompile Include="EzFunction\EzFunction.cpp" />
     <ClCompile Include="EzInstruction\EzInstruction.cpp" />
     <ClCompile Include="EzInstruction\Instructions\EzCall.cpp" />
     <ClCompile Include="EzInstruction\Instructions\EzFloatPush.cpp" />
     <ClCompile Include="EzInstruction\Instructions\EzJmp.cpp" />
     <ClCompile Include="EzInstruction\Instructions\EzNativeCall.cpp" />
+    <ClCompile Include="EzInstruction\Instructions\EzSigned.cpp" />
     <ClCompile Include="EzInstruction\Instructions\EzSwitch.cpp" />
     <ClCompile Include="EzInstruction\Instructions\EzVarInstr.cpp" />
     <ClCompile Include="EzSignature\EzSignature.cpp" />
-    <ClCompile Include="EzSrcProgram.cpp" />
+    <ClCompile Include="Rage\EzSrcProgram.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -197,7 +197,7 @@ namespace Ez
 	{
 		return m_MappedInstructions;
 	}
-	const std::vector<std::shared_ptr<EzInstruction>>& EzFunction::GetInstructions()
+	const std::vector<EzPtr<EzInstruction>>& EzFunction::GetInstructions()
 	{
 		return m_Instructions;
 	}

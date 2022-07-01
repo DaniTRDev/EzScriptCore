@@ -21,7 +21,7 @@ namespace Ez
 
 		void MapInstructions();
 		std::size_t GetMappedInstructions();
-		const std::vector<std::shared_ptr<EzInstruction>>& GetInstructions();
+		const std::vector<EzPtr<EzInstruction>>& GetInstructions();
 
 		void AddLoc(std::uintptr_t Address);
 		const std::map<std::uintptr_t, std::uintptr_t>& GetLocs();
@@ -57,7 +57,7 @@ namespace Ez
 	private:
 
 		/*an unique_ptr so when we clear this vector the memory will be freed automatically*/
-		std::vector<std::shared_ptr<EzInstruction>> m_Instructions;
+		std::vector<EzPtr<EzInstruction>> m_Instructions;
 		std::size_t m_MappedInstructions;
 
 		/*address, ID*/

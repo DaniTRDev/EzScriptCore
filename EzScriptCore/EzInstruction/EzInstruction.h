@@ -27,7 +27,6 @@ namespace Ez
 		rage::RageInstr GetInstructionId();
 		std::string_view Id2String();
 
-		std::uint8_t* GetInstructionOpCodes();
 		std::size_t GetInstructionSize();
 
 		std::int32_t					GetOperandsI32(std::uint8_t* OpCodes);
@@ -95,5 +94,7 @@ namespace Ez
 		std::uint8_t					m_OperandCount;
 
 		std::ostringstream				m_DecompiledInstruction;
+
+		char* m_Operands;
 	};
 }

@@ -1,94 +1,158 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="EzDecompiler">
-      <UniqueIdentifier>{288FAEE4-14F2-3D89-BD77-763FA9B9090C}</UniqueIdentifier>
+    <Filter Include="EzAssembler">
+      <UniqueIdentifier>{A2758907-0E2B-02FD-971F-FCD303D4F800}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EzBuffer">
+      <UniqueIdentifier>{1EF9257B-0AC6-8086-33DF-6E2E1F0BB614}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EzDisassembler">
+      <UniqueIdentifier>{822A1229-6EF8-052F-578C-765543F9E193}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EzException">
+      <UniqueIdentifier>{D3B260A7-3F68-D99C-C85C-D3733411D0A0}</UniqueIdentifier>
     </Filter>
     <Filter Include="EzFunction">
       <UniqueIdentifier>{CA290BA0-B6E1-4CED-1FE9-25490BC0E7DD}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EzInstruction">
+    <Filter Include="EzSignature">
+      <UniqueIdentifier>{368C2B76-A241-A46B-2B36-9E4297EA9A6F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Rage">
+      <UniqueIdentifier>{E4B08B7C-D0E7-8C0D-79D4-721065EA080F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EzDisassembler\EzInstruction">
       <UniqueIdentifier>{062DE4AA-72ED-5FE1-3B28-A95EA7A7A4BD}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EzInstruction\Instructions">
+    <Filter Include="EzDisassembler\EzInstruction\Instructions">
       <UniqueIdentifier>{0A2AE3AC-F639-8F7D-5FF3-F39B4B227E16}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="EzSignature">
-      <UniqueIdentifier>{d6863637-8405-4dbf-8552-3feaf67af1b7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EzBuffer.h" />
-    <ClInclude Include="EzDecompiler\EzDecompiler.h">
-      <Filter>EzDecompiler</Filter>
+    <ClInclude Include="EzAssembler\EzAsmFunc.h">
+      <Filter>EzAssembler</Filter>
     </ClInclude>
-    <ClInclude Include="EzDecompiler\EzVariables.h">
-      <Filter>EzDecompiler</Filter>
+    <ClInclude Include="EzAssembler\EzAssembler.h">
+      <Filter>EzAssembler</Filter>
+    </ClInclude>
+    <ClInclude Include="EzAssembler\EzCodeHolder.h">
+      <Filter>EzAssembler</Filter>
+    </ClInclude>
+    <ClInclude Include="EzBuffer\EzBuffer.h">
+      <Filter>EzBuffer</Filter>
+    </ClInclude>
+    <ClInclude Include="EzDisassembler\EzDisassembler.h">
+      <Filter>EzDisassembler</Filter>
+    </ClInclude>
+    <ClInclude Include="EzDisassembler\EzVariables.h">
+      <Filter>EzDisassembler</Filter>
+    </ClInclude>
+    <ClInclude Include="EzException\EzException.h">
+      <Filter>EzException</Filter>
     </ClInclude>
     <ClInclude Include="EzFunction\EzFunction.h">
       <Filter>EzFunction</Filter>
     </ClInclude>
     <ClInclude Include="EzInstruction\EzInstruction.h">
-      <Filter>EzInstruction</Filter>
-    </ClInclude>
-    <ClInclude Include="EzInstruction\Instructions\EzJmp.h">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClInclude>
-    <ClInclude Include="EzInstruction\Instructions\EzSwitch.h">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClInclude>
-    <ClInclude Include="EzSrcProgram.h" />
-    <ClInclude Include="RageEnums.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="EzInstruction\Instructions\EzNativeCall.h">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClInclude>
-    <ClInclude Include="EzInstruction\Instructions\EzVarInstr.h">
-      <Filter>EzInstruction\Instructions</Filter>
+      <Filter>EzDisassembler\EzInstruction</Filter>
     </ClInclude>
     <ClInclude Include="EzInstruction\Instructions\EzCall.h">
-      <Filter>EzInstruction\Instructions</Filter>
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
     </ClInclude>
     <ClInclude Include="EzInstruction\Instructions\EzFloatPush.h">
-      <Filter>EzInstruction\Instructions</Filter>
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzJmp.h">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzNativeCall.h">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzSigned.h">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzSwitch.h">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClInclude>
+    <ClInclude Include="EzInstruction\Instructions\EzVarInstr.h">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
     </ClInclude>
     <ClInclude Include="EzSignature\EzSignature.h">
       <Filter>EzSignature</Filter>
     </ClInclude>
+    <ClInclude Include="Rage\EzSrcProgram.h">
+      <Filter>Rage</Filter>
+    </ClInclude>
+    <ClInclude Include="Rage\RageEnums.h">
+      <Filter>Rage</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="EzAssembler\EzAsmInstruction.h">
+      <Filter>EzAssembler</Filter>
+    </ClInclude>
+    <ClInclude Include="EzAssembler\EzAssemblerStateNode.h">
+      <Filter>EzAssembler</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EzBuffer.cpp" />
-    <ClCompile Include="EzDecompiler\EzDecompiler.cpp">
-      <Filter>EzDecompiler</Filter>
+    <ClCompile Include="EzAssembler\EzAsmFunc.cpp">
+      <Filter>EzAssembler</Filter>
+    </ClCompile>
+    <ClCompile Include="EzAssembler\EzAssembler.cpp">
+      <Filter>EzAssembler</Filter>
+    </ClCompile>
+    <ClCompile Include="EzAssembler\EzCodeHolder.cpp">
+      <Filter>EzAssembler</Filter>
+    </ClCompile>
+    <ClCompile Include="EzBuffer\EzBuffer.cpp">
+      <Filter>EzBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="EzDisassembler\EzDisassembler.cpp">
+      <Filter>EzDisassembler</Filter>
+    </ClCompile>
+    <ClCompile Include="EzException\EzException.cpp">
+      <Filter>EzException</Filter>
     </ClCompile>
     <ClCompile Include="EzFunction\EzFunction.cpp">
       <Filter>EzFunction</Filter>
     </ClCompile>
     <ClCompile Include="EzInstruction\EzInstruction.cpp">
-      <Filter>EzInstruction</Filter>
-    </ClCompile>
-    <ClCompile Include="EzInstruction\Instructions\EzJmp.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClCompile>
-    <ClCompile Include="EzInstruction\Instructions\EzSwitch.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClCompile>
-    <ClCompile Include="EzSrcProgram.cpp" />
-    <ClCompile Include="pch.cpp" />
-    <ClCompile Include="EzInstruction\Instructions\EzNativeCall.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
-    </ClCompile>
-    <ClCompile Include="EzInstruction\Instructions\EzVarInstr.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
+      <Filter>EzDisassembler\EzInstruction</Filter>
     </ClCompile>
     <ClCompile Include="EzInstruction\Instructions\EzCall.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
     </ClCompile>
     <ClCompile Include="EzInstruction\Instructions\EzFloatPush.cpp">
-      <Filter>EzInstruction\Instructions</Filter>
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzJmp.cpp">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzNativeCall.cpp">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzSigned.cpp">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzSwitch.cpp">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
+    </ClCompile>
+    <ClCompile Include="EzInstruction\Instructions\EzVarInstr.cpp">
+      <Filter>EzDisassembler\EzInstruction\Instructions</Filter>
     </ClCompile>
     <ClCompile Include="EzSignature\EzSignature.cpp">
       <Filter>EzSignature</Filter>
+    </ClCompile>
+    <ClCompile Include="Rage\EzSrcProgram.cpp">
+      <Filter>Rage</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="EzAssembler\EzAsmInstruction.cpp">
+      <Filter>EzAssembler</Filter>
+    </ClCompile>
+    <ClCompile Include="EzAssembler\EzAssemblerStateNode.cpp">
+      <Filter>EzAssembler</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

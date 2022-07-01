@@ -374,8 +374,7 @@ namespace Ez
 	{
 		m_LastAssembly.str("");
 		m_LastAssembly.clear(); /*reset m_LastAssembly*/
-
-		auto& FuncInstrs = const_cast<std::vector<std::shared_ptr<EzInstruction>>&>
+		auto& FuncInstrs = const_cast<std::vector<EzPtr<EzInstruction>>&>
 			(Func->GetInstructions());
 		m_LastAssembly << "ENTER -> FSTART " << Func->GetFuncIndex() << "\n";
 
@@ -397,7 +396,7 @@ namespace Ez
 		m_LastAssembly << "LEAVE -> FEND\n\n";
 	}
 	void EzDisassembler::DisassembleInstr(EzFunction* Func, 
-		std::shared_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId)
+		EzPtr<EzInstruction>* Instructions, std::uintptr_t& InstrId)
 	{
 		auto& Instruction = Instructions[InstrId];
 		auto OpCodes = m_CodeBuffer->GetData();

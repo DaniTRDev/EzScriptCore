@@ -47,41 +47,27 @@ namespace Ez
 
 	float EzInstruction::GetOperandsF(std::uint8_t* OpCodes)
 	{
-		float Return;
-		auto OperandVal = GetOperandsU32(OpCodes);
-
-		auto ReturnBytes = (std::uint8_t*)&Return;
-		auto OperandBytes = (std::uint8_t*)&OperandVal;
-
-		ReturnBytes[3] = OperandBytes[3];
-		ReturnBytes[2] = OperandBytes[2];
-		ReturnBytes[1] = OperandBytes[1];
-		ReturnBytes[0] = OperandBytes[0];
-
-		return Return;
+		return *(float*)&OpCodes[m_StartAddr + 1];
 	}
 
 	std::int32_t EzInstruction::GetOperandsI32(std::uint8_t* OpCodes)
 	{
+		auto Bytes = (std::uint8_t*)(&OpCodes[m_StartAddr + 1]);
+		
 		switch (m_OperandCount)
 		{
 		case 1:
 			return std::int8_t(OpCodes[m_StartAddr + 1]);
 
 		case 2:
-		{
-			auto Bytes = (std::uint8_t*)(&OpCodes[m_StartAddr + 1]);
-			return Util::Bits2I16(Bytes[1], Bytes[0]);
-		}
+			return *(std::int16_t*)Bytes;
+		
 
-		case 3: /*24bits*/
-		{
-			auto Bytes = (std::uint8_t*)(&OpCodes[m_StartAddr + 1]);
+		case 3: /*24bits*/	
 			return Util::Bits2I32(Bytes[2], Bytes[1], Bytes[0], 0);
-		}
 
 		case 4:
-			return *(std::int32_t*)&OpCodes[m_StartAddr + 1];
+			return *(std::int32_t*)Bytes;
 
 		}
 
@@ -89,23 +75,25 @@ namespace Ez
 	}
 	std::uint32_t EzInstruction::GetOperandsU32(std::uint8_t* OpCodes)
 	{
+		auto Bytes = (std::uint8_t*)(&OpCodes[m_StartAddr + 1]);
+
 		switch (m_OperandCount)
 		{
 		case 1:
 			return std::uint8_t(OpCodes[m_StartAddr + 1]);
+
 		case 2:
-			return *(std::uint16_t*)&OpCodes[m_StartAddr + 1];
+			return *(std::uint16_t*)Bytes;
+
 
 		case 3: /*24bits*/
-		{
-			auto Bytes = (std::int8_t*)(&OpCodes[m_StartAddr + 1]);
-			return std::uint32_t(Util::Bits2U32(Bytes[2], Bytes[1], Bytes[0], 0));
-		}
+			return Util::Bits2U32(Bytes[2], Bytes[1], Bytes[0], 0);
 
 		case 4:
-			return *(std::uint32_t*)&OpCodes[m_StartAddr + 1];
+			return *(std::uint32_t*)Bytes;
 
 		}
+
 		return UINT32_MAX;
 	}
 

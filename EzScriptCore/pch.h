@@ -9,9 +9,11 @@
 #include <iostream>
 #include <fstream>
 #include <unordered_map>
+#include <chrono>
 #include <map>
 #include <stack>
 #include <filesystem>
+#include <thread>
 #include <tchar.h>
 #include <stdio.h>
 #include <strsafe.h>
@@ -73,6 +75,13 @@ namespace Util
 
 }
 
+namespace Ez
+{
+	template <typename T>
+	using EzPtr = std::shared_ptr<T>;
+
+}
+
 #include "Rage/RageEnums.h"
 
 #include "EzBuffer/EzBuffer.h"
@@ -88,9 +97,11 @@ namespace Util
 #include "EzSignature/EzSignature.h"
 #include "EzFunction/EzFunction.h"
 #include "EzDisassembler/EzDisassembler.h"
-#include "EzAssembler/EzAsmFunc.h"
-#include "EzAssembler/EzCodeHolder.h"
-#include "EzAssembler/EzAssembler.h"
 #include "EzException/EzException.h"
+#include "EzAssembler/EzCodeHolder.h"
+#include "EzAssembler/EzAsmInstruction.h"
+#include "EzAssembler/EzAssemblerStateNode.h"
+#include "EzAssembler/EzAsmFunc.h"
+#include "EzAssembler/EzAssembler.h"
 
 #endif //PCH_H

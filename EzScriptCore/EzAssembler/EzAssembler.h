@@ -18,14 +18,19 @@ namespace Ez
 
 	public:
 
-		std::shared_ptr<EzAsmFunc> CreateFunc(std::string_view Name, std::uint32_t ParamCount,
+		EzPtr<EzAsmFunc> CreateFunc(std::string_view Name, std::uint32_t ParamCount,
 			std::uint32_t ReturnSize);
 
-		std::shared_ptr<EzAsmFunc> GetFuncByName(std::string_view Name);
+		EzPtr<EzAsmFunc> GetFuncByName(std::string_view Name);
+
+		EzPtr<EzAssemblerStateNode> CreateAsmNode(std::string_view Name);
+		/*mostly used to build stubs*/
 
 	private:
 
-		std::vector<std::shared_ptr<EzAsmFunc>> m_Functions;
+		std::vector<EzPtr<EzAssemblerStateNode>> m_AsmNodes;
+		std::map<EzPtr<EzAssemblerStateNode>, EzPtr<EzAsmFunc>> m_Functions;
+
 		EzAssemblerStatus m_LastStatus; /*used to know what was the last error when compiling*/
 
 	private:

@@ -33,4 +33,15 @@ namespace Ez
 	{
 		return m_VarCount;
 	}
+
+	void EzAsmFunc::CallHandler(EzPtr<EzAssemblerStateNode> Node)
+	{
+		if (!m_Handler)
+			throw EzException().SetExceptionClass(typeid(this).name())
+			.SetExceptionFunc(__func__)
+			.SetExceptionName("AsmFuncHandler*")
+			.SetExceptionInfo("Could not call the function handler because it is invalid!");
+
+		m_Handler(Node);
+	}
 }

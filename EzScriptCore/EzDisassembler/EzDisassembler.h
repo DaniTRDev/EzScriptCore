@@ -116,7 +116,7 @@ namespace Ez
 		/// <param name='Instructions'>The array of instructions of this function </param>
 		/// <param name='InstrId'>A reference to the instruction id variable</param>
 		/// </summary> Disassembles the instruction passed on the array with the current Index
-		void DisassembleInstr(EzFunction * Func, std::shared_ptr<EzInstruction>* Instructions, std::uintptr_t& InstrId);
+		void DisassembleInstr(EzFunction * Func, EzPtr<EzInstruction>* Instructions, std::uintptr_t& InstrId);
 
 		/// <summary>
 		/// </summary> Returns the number of disassembled instructions
